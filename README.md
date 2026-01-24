@@ -1,1 +1,1 @@
-# ECS165A_Course_Project
+# 165a-winter-2026
