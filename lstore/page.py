@@ -15,7 +15,7 @@ class Page:
     def write(self, value):
         if self.has_capacity():
             for i in range(len(value)):
-                self.data[self.num_records] = ord(i)
+                self.data[self.curr] = ord(value[i])
                 self.curr += 1
             self.num_records += 1
 
@@ -23,4 +23,12 @@ class Page:
         else:
             return "Failed to write."
 
+'''
+page1 = Page()
+# print(page1.data)
 
+page1.write("hello")
+
+print("first: " + str(chr(page1.data[0])))
+
+'''
