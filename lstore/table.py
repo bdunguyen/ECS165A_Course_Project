@@ -1,4 +1,4 @@
-from index import Index
+from lstore.index import Index
 from time import time
 
 INDIRECTION_COLUMN = 0

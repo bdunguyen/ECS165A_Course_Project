@@ -26,9 +26,6 @@ class Page:
 '''
 page1 = Page()
 # print(page1.data)
-
 page1.write("hello")
-
 print("first: " + str(chr(page1.data[0])))
-
 '''
