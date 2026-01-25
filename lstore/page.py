@@ -6,14 +6,15 @@ class Page:
         self.data = bytearray(4096)
         self.curr = 0
 
-    def has_capacity(self):
-        if self.num_records < len(self.data):
+    def has_capacity(self, value): # checks if the page is full
+        space = len(self.data)
+        if (self.curr < space) and (space - len(value) > 0): # check if there is enough space
             return True
         else:
             return False
 
     def write(self, value):
-        if self.has_capacity():
+        if self.has_capacity(value):
             for i in range(len(value)):
                 self.data[self.curr] = ord(value[i])
                 self.curr += 1
@@ -23,9 +24,3 @@ class Page:
         else:
             return "Failed to write."
 
-'''
-page1 = Page()
-# print(page1.data)
-page1.write("hello")
-print("first: " + str(chr(page1.data[0])))
-'''
