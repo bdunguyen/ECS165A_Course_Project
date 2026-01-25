@@ -3,7 +3,7 @@ from lstore.table import Table
 class Database():
 
     def __init__(self):
-        self.tables = []
+        self.tables = {}
         pass
 
     # Not required for milestone1
@@ -20,19 +20,28 @@ class Database():
     :param key: int             #Index of table key in columns
     """
     def create_table(self, name, num_columns, key_index):
+        # TODO: Error message
+        if name in self.tables:
+            print("WARNING: Cannot Add")
+            return None
         table = Table(name, num_columns, key_index)
+        self.tables[name] = table
         return table
-
     
     """
     # Deletes the specified table
     """
     def drop_table(self, name):
-        pass
-
+        del self.tables[name]
+        print(self.tables)
     
     """
     # Returns table with the passed name
     """
     def get_table(self, name):
-        pass
+        return self.tables[name]
+
+
+db = Database()
+print(db.create_table("table1", 2, 1))
+db.drop_table("table1")
