@@ -1,7 +1,7 @@
 
 class Page:
 
-    def __init__(self):
+    def __init__(self): 
         self.num_records = 0
         self.data = bytearray(4096)
         self.curr = 0
@@ -16,7 +16,7 @@ class Page:
     def write(self, value):
         if self.has_capacity(value):
             for i in range(len(value)):
-                self.data[self.curr] = ord(value[i])
+                self.data[self.curr] = ord(value[i]) # Adds the data in the appropriate place in the bytearray
                 self.curr += 1
             self.num_records += 1
 
