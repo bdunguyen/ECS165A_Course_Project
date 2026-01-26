@@ -20,6 +20,7 @@ class Database():
     :param key: int             #Index of table key in columns
     """
     def create_table(self, name, num_columns, key_index):
+        # checks if a table already exists
         if name in self.tables:
             print("WARNING: Cannot Add")
             return None
@@ -31,6 +32,7 @@ class Database():
     # Deletes the specified table
     """
     def drop_table(self, name):
+        # removes table from hash map
         del self.tables[name]
         print(self.tables)
     
