@@ -8,7 +8,7 @@ class Page:
 
     def has_capacity(self, value): # checks if the page is full
         space = len(self.data)
-        if (self.curr < space) and (space - len(value) > 0): # check if there is enough space
+        if (space - self.curr - len(value) >= 0): # check if there is enough space
             return True
         else:
             return False
