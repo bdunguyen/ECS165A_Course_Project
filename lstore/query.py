@@ -21,17 +21,47 @@ class Query:
     # Return False if record doesn't exist or is locked due to 2PL
     """
     def delete(self, primary_key):
-        pass
+        try:
+            RIDs= self.table.index.locate(self.table.key, primary_key)
+            if not RIDs:
+                return False
+        
+            RID = RIDs[0]
+            return bool(self.table.delete_record(RID))
     
-    
+        except Exception:
+            return False
+
     """
     # Insert a record with specified columns
     # Return True upon succesful insertion
     # Returns False if insert fails for whatever reason
     """
     def insert(self, *columns):
-        schema_encoding = '0' * self.table.num_columns
-        pass
+        
+
+        try:
+            #col count
+            if len(columns) != self.table.num_columns:
+                return False
+            
+            schema_encoding = '0' * self.table.num_columns
+
+            #tuple -> List
+
+            columns_list = []
+            for c in columns:
+                columns_list.append(c)
+
+            success = self.table.insert_record(columns, schema_encoding)
+
+            if success:
+                return True
+            else:
+                return False
+            
+        except Exception:
+            return False
 
     
     """
@@ -44,7 +74,36 @@ class Query:
     # Assume that select will never be called on a key that doesn't exist
     """
     def select(self, search_key, search_key_index, projected_columns_index):
-        pass
+
+        try:
+            RIDs = self.table.index.locate(search_key_index, search_key)
+
+            results = []
+
+            for i in range(0, len(RIDs)):
+                RID = RIDs[i]
+
+                columns = self.table.read_record(RID, projected_columns_index)
+
+
+                #grab key value
+
+                if projected_columns_index[self.table.key] == 1:
+                    keyVal = columns[self.table.key]
+
+                else:
+                    keyProj = [0] * self.table.num_columns
+                    keyProj[self.table.key] = 1
+                    keyVal = self.table.read_record(RID, keyProj)[self.table.key]
+                #build+store
+                RecordObject = Record(RID, keyVal, columns)
+                results.append(RecordObject)
+
+            return results
+
+
+        except Exception:
+            return False
 
     
     """
