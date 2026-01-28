@@ -67,8 +67,13 @@ class Query:
     # Returns False if no records exist with given key or if the target record cannot be accessed due to 2PL locking
     """
     def update(self, primary_key, *columns):
-        pass
-
+        if primary_key not in self.table: # if key does not exist
+            return False
+        updated_value = self.table[primary_key] # get reference to record so we can update in place
+        for col, val in columns: # iterate over table to apply update
+            updated_value[col] += val # update value with new value
+        return True
+        
     
     """
     :param start_range: int         # Start of the key range to aggregate 
