@@ -22,8 +22,7 @@ class Database():
     def create_table(self, name, num_columns, key_index):
         # checks if a table already exists
         if name in self.tables:
-            print("WARNING: Cannot Add")
-            return None
+            raise Exception("WARNING: Cannot Add. Table already exists.")
         table = Table(name, num_columns, key_index)
         self.tables[name] = table
         return table
