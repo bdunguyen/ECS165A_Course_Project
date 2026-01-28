@@ -24,8 +24,8 @@ class Table:
     def __init__(self, name, num_columns, key):
         self.name = name
         self.key = key
-        self.num_columns = num_columns
-        self.page_directory = {}
+        self.num_columns = num_columns # this would be the number of pages
+        self.page_directory = {} # tuple? the (index, page object)?
         self.index = Index(self)
         self.merge_threshold_pages = 50  # The threshold to trigger a merge
         pass
