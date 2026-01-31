@@ -1,4 +1,4 @@
-from lstore.db import Page
+from lstore.page import Page
 def test_has_capacity(self, value):
     page = Page()
     value = "hello"
