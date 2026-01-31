@@ -1,4 +1,5 @@
 from lstore.db import Database
+import pytest
 
 """
 # Creates a new table
@@ -20,9 +21,9 @@ def test_existing_table():
     # create table 1
     db.create_table("table1", 5, 1)
     # try to insert table 1 again
-    table2 = db.create_table("table1", 3, 5)
 
-    assert table2 == None
+    with pytest.raises(Exception):
+        db.create_table("table1", 3, 5)
 
 """
 # Deletes the specified table
