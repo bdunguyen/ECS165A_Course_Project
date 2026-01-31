@@ -29,12 +29,22 @@ def test_existing_table():
 # Deletes the specified table
 """
 def test_drop_table():
-    # drop_table(self, name)
-    pass
+    db = Database()
+
+    db.create_table("table1", 5, 1)
+    db.drop_table("table1")
+
+    # after dropping, accessing the table should fail
+    with pytest.raises(KeyError):
+        db.get_table("table1")
 
 """
 # Returns table with the passed name
 """
 def get_table():
-    # get_table(self, name)
-    pass
+    db = Database()
+
+    table = db.create_table("table1", 5, 1)
+    result = db.get_table("table1")
+
+    assert result is table

@@ -16,12 +16,10 @@ class Page:
     def write(self, value):
         if self.has_capacity(value):
             for i in range(len(value)):
-                self.data[self.curr] = ord(value[i]) # Adds the data in the appropriate place in the bytearray
+                self.data[self.curr] = ord(value[i]) # adds the data in the appropriate place in the bytearray
                 self.curr += 1
             self.num_records += 1
 
             return True
         else:
             return False
-    
-
