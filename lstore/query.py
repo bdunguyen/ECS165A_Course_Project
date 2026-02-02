@@ -45,21 +45,25 @@ class Query:
             if len(columns) != self.table.num_columns:
                 return False
             
+
             schema_encoding = '0' * self.table.num_columns
 
-            #tuple -> List
 
-            columns_list = []
-            for c in columns:
-                columns_list.append(c)
+            #create rid (very loose logic)
+            RID = len(self.table.page_directory) + 1
 
-            success = self.table.insert_record(columns, schema_encoding)
+            self.table.page_directory[RID] = {
+                "columns": list(columns),
+                "schema": schema_encoding
+            }
 
-            if success:
-                return True
-            else:
-                return False
-            
+
+            key = columns[self.table.key]
+            self.table.index.indices[self.table.key].insert(key, RID)
+
+            return True
+        
+
         except Exception:
             return False
 
@@ -82,28 +86,24 @@ class Query:
 
             for i in range(0, len(RIDs)):
                 RID = RIDs[i]
+                data = self.table.page_directory[RID]["columns"]
+                projected = []
 
-                columns = self.table.read_record(RID, projected_columns_index)
-
-
-                #grab key value
-
-                if projected_columns_index[self.table.key] == 1:
-                    keyVal = columns[self.table.key]
-
+                for i in range(0,self.table.num_columns):
+                    if projected_columns_index[i] ==1:
+                        projected.append(data[i])
                 else:
-                    keyProj = [0] * self.table.num_columns
-                    keyProj[self.table.key] = 1
-                    keyVal = self.table.read_record(RID, keyProj)[self.table.key]
-                #build+store
-                RecordObject = Record(RID, keyVal, columns)
-                results.append(RecordObject)
+                    projected.append(None)
+
+
+                key = data[self.table.key]
+                results.append(Record(RID, key, projected))
 
             return results
-
-
+        
         except Exception:
             return False
+
 
     
     """
