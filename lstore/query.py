@@ -143,8 +143,34 @@ class Query:
     # Returns False if no record exists in the given range
     """
     def sum(self, start_range, end_range, aggregate_column_index):
-        pass
+        total = 0 # initialize sum
+        in_record = False # set in_record to false
 
+        for key in range(start_range, end_range + 1):
+            if key not in self.table: # if key does not exist in table, go to next key
+                continue
+
+            record = self.select(key, 0, aggregate_column_index) # search through db and find key value at key
+
+            if record is False: # if key is empty, return False
+                return False
+            
+            if len(record) == 0: # if there is no record, continue
+                continue
+            
+            value = record[0][0] # set value to the first value of record
+
+            if value is None: # if there value is None, continue
+                continue
+
+            total += value # otherwise, add value to total dataframe
+            in_record = True # set in_record to True to indicate successful selection
+
+        if in_record == True: # if seccessful selection, return total
+            return total
+        
+        else:
+            return False # if all is uncessful, false
     
     """
     :param start_range: int         # Start of the key range to aggregate 
