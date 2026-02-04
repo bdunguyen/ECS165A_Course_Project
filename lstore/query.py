@@ -56,10 +56,12 @@ class Query:
                 "columns": list(columns),
                 "schema": schema_encoding
             }
-
-
+            
+            # define key
             key = columns[self.table.key]
-            self.table.index.indices[self.table.key].insert(key, RID)
+
+            if self.table.key in self.table.index.indices:
+                self.table.index.indices[self.table.key].insert(key, RID)
 
             return True
         
@@ -84,20 +86,22 @@ class Query:
 
             results = []
 
-            for i in range(0, len(RIDs)):
-                RID = RIDs[i]
-                data = self.table.page_directory[RID]["columns"]
-                projected = []
+            for RIDs, record in self.table.page_directory.items():
+                data = record["columns"]
 
-                for i in range(0,self.table.num_columns):
-                    if projected_columns_index[i] ==1:
-                        projected.append(data[i])
-                else:
-                    projected.append(None)
+                if data[search_key_index] != search_key:
+                    continue
+
+                else: 
+                    projected = []
+
+                    for i in range(self.table.num_columns):
+                        if projected_columns_index[i] == 1:
+                            projected.append(data[i])
 
 
                 key = data[self.table.key]
-                results.append(Record(RID, key, projected))
+                results.append(Record(RIDs, key, projected))
 
             return results
         
@@ -126,12 +130,28 @@ class Query:
     # Returns False if no records exist with given key or if the target record cannot be accessed due to 2PL locking
     """
     def update(self, primary_key, *columns):
-        if primary_key not in self.table: # if key does not exist
+        try:
+            # find record by primary key
+            RID_to_update = None
+            for RID, record in self.table.page_directory.items():
+                if record["columns"][self.table.key] == primary_key:
+                    RID_to_update = RID
+                    break
+
+            if RID_to_update is None:
+                return False  # key not found
+
+            # update columns
+            record = self.table.page_directory[RID_to_update]
+            for col, val in columns:  # columns = list of (col_index, value)
+                if record["columns"][col] is None:
+                    record["columns"][col] = val
+                else:
+                    record["columns"][col] += val
+
+            return True
+        except Exception:
             return False
-        updated_value = self.table[primary_key] # get reference to record so we can update in place
-        for col, val in columns: # iterate over table to apply update
-            updated_value[col] += val # update value with new value
-        return True
         
     
     """
@@ -143,8 +163,51 @@ class Query:
     # Returns False if no record exists in the given range
     """
     def sum(self, start_range, end_range, aggregate_column_index):
-        pass
+        try:
+            total = 0 # initialize sum
+            in_record = False # set in_record to false
 
+            for record in self.table.page_directory.values():
+                key = record["columns"][self.table.key]
+                if start_range <= key <= end_range:
+                    value = record["columns"][aggregate_column_index]
+                    if value is not None:
+                        total += value
+                    in_record = True
+
+                if not in_record:
+                    return False
+                return total
+            
+        except Exception:
+            return False
+
+
+            #for key in range(start_range, end_range + 1):
+            #if key not in self.table: # if key does not exist in table, go to next key
+                #continue
+
+            #record = self.select(key, 0, aggregate_column_index) # search through db and find key value at key
+
+            """ if record is False: # if key is empty, return False
+                return False
+            
+            if len(record) == 0: # if there is no record, continue
+                continue
+            
+            value = record[0][0] # set value to the first value of record
+
+            if value is None: # if there value is None, continue
+                continue
+
+            total += value # otherwise, add value to total dataframe
+            in_record = True # set in_record to True to indicate successful selection
+
+        if in_record == True: # if seccessful selection, return total
+            return total
+        
+        else:
+            return False # if all is uncessful, false """
     
     """
     :param start_range: int         # Start of the key range to aggregate 
