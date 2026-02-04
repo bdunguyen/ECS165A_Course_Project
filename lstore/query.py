@@ -86,7 +86,7 @@ class Query:
 
             results = []
 
-            for RID, record in self.table.page_directory.items():
+            for RIDs, record in self.table.page_directory.items():
                 data = record["columns"]
 
                 if data[search_key_index] != search_key:
@@ -101,7 +101,7 @@ class Query:
 
 
                 key = data[self.table.key]
-                results.append(Record(RID, key, projected))
+                results.append(Record(RIDs, key, projected))
 
             return results
         
