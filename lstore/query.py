@@ -173,9 +173,9 @@ class Query:
                     value = record["columns"][aggregate_column_index]
                     if value is not None:
                         total += value
-                    found = True
+                    in_record = True
 
-                if not found:
+                if not in_record:
                     return False
                 return total
             
