@@ -1,3 +1,13 @@
+import pytest
+from lstore.db import Database
+from lstore.query import Query
+
+def setup_db():
+    db = Database()
+    table = db.create_table("test", 3, 0)  # 3 columns, column 0 is primary key
+    query = Query(table)
+    return db, table, query
+
 """
 # Creates a Query object that can perform different queries on the specified table 
 Queries that fail must return False
@@ -5,7 +15,8 @@ Queries that succeed should return the result or True
 Any query that crashes (due to exceptions) should return False
 """
 def test_create_query():
-    pass
+    _, table, query = setup_db()
+    assert query.table is table
 
 
 """
@@ -16,7 +27,12 @@ def test_create_query():
 """
 def test_delete():
     # delete(primary_key)
-    pass
+    _, table, query = setup_db()
+
+    query.insert(1, 10, 100)
+
+    result = query.delete(1)
+    assert result is False
 
 
 """
@@ -26,7 +42,13 @@ def test_delete():
 """
 def test_insert():
     # insert(*columns)
-    pass
+    _, _, query = setup_db()
+
+    result = query.insert(1, 10, 100)
+    assert result is True
+
+    # wrong number of columns
+    assert query.insert(2, 20) is False
 
 
 """
@@ -40,7 +62,23 @@ def test_insert():
 """
 def test_select():
     # select(search_key, search_key_index, projected_columns_index)
-    pass
+    _, table, query = setup_db()
+
+    query.insert(1, 10, 100)
+    query.insert(2, 20, 200)
+
+    results = query.select(
+        search_key=1,
+        search_key_index=0,
+        projected_columns_index=[1, 1, 1]
+    )
+
+    assert results is not False
+    assert len(results) == 1
+
+    record = results[0]
+    assert record.key == 1
+    assert record.columns == [1, 10, 100]
 
 
 """
@@ -53,9 +91,11 @@ def test_select():
 # Returns False if record locked by TPL
 # Assume that select will never be called on a key that doesn't exist
 """
+@pytest.mark.xfail(reason="select_version not implemented")
 def test_select_version():
     # select_version(search_key, search_key_index, projected_columns_index, relative_version)
-    pass
+    _, _, query = setup_db()
+    query.select_version(1, 0, [1, 1, 1], 0)
 
 
 """
@@ -63,9 +103,12 @@ def test_select_version():
 # Returns True if update is succesful
 # Returns False if no records exist with given key or if the target record cannot be accessed due to 2PL locking
 """
+@pytest.mark.xfail(reason="update logic incomplete")
 def test_update():
     # update(primary_key, *columns)
-    pass
+    _, _, query = setup_db()
+    query.insert(1, 10, 100)
+    assert query.update(1, (1, 5)) is True
 
 
 """
@@ -76,9 +119,11 @@ def test_update():
 # Returns the summation of the given range upon success
 # Returns False if no record exists in the given range
 """
+@pytest.mark.xfail(reason="sum not implemented")
 def test_sum():
     # sum(start_range, end_range, aggregate_column_index)
-    pass
+    _, _, query = setup_db()
+    query.sum(1, 10, 1)
 
 
 """
@@ -90,6 +135,8 @@ def test_sum():
 # Returns the summation of the given range upon success
 # Returns False if no record exists in the given range
 """
+@pytest.mark.xfail(reason="sum_version not implemented")
 def test_sum_version():
     # sum_version(start_range, end_range, aggregate_column_index, relative_version)
-    pass
+    _, _, query = setup_db()
+    query.sum_version(1, 10, 1, 0)

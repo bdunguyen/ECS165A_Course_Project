@@ -56,10 +56,12 @@ class Query:
                 "columns": list(columns),
                 "schema": schema_encoding
             }
-
-
+            
+            # define key
             key = columns[self.table.key]
-            self.table.index.indices[self.table.key].insert(key, RID)
+
+            if self.table.key in self.table.index.indices:
+                self.table.index.indices[self.table.key].insert(key, RID)
 
             return True
         
@@ -84,16 +86,15 @@ class Query:
 
             results = []
 
-            for i in range(0, len(RIDs)):
-                RID = RIDs[i]
-                data = self.table.page_directory[RID]["columns"]
-                projected = []
+            for RID, record in self.table.page_directory.items():
+                data = record["columns"]
 
-                for i in range(0,self.table.num_columns):
-                    if projected_columns_index[i] ==1:
-                        projected.append(data[i])
-                else:
-                    projected.append(None)
+                if data[search_key_index] == search_key:
+                    projected = []
+
+                    for i in range(self.table.num_columns):
+                        if projected_columns_index[i] == 1:
+                            projected.append(data[i])
 
 
                 key = data[self.table.key]
