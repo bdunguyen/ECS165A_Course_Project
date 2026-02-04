@@ -89,7 +89,10 @@ class Query:
             for RID, record in self.table.page_directory.items():
                 data = record["columns"]
 
-                if data[search_key_index] == search_key:
+                if data[search_key_index] != search_key:
+                    continue
+
+                else: 
                     projected = []
 
                     for i in range(self.table.num_columns):
@@ -127,12 +130,28 @@ class Query:
     # Returns False if no records exist with given key or if the target record cannot be accessed due to 2PL locking
     """
     def update(self, primary_key, *columns):
-        if primary_key not in self.table: # if key does not exist
+        try:
+            # find record by primary key
+            RID_to_update = None
+            for RID, record in self.table.page_directory.items():
+                if record["columns"][self.table.key] == primary_key:
+                    RID_to_update = RID
+                    break
+
+            if RID_to_update is None:
+                return False  # key not found
+
+            # update columns
+            record = self.table.page_directory[RID_to_update]
+            for col, val in columns:  # columns = list of (col_index, value)
+                if record["columns"][col] is None:
+                    record["columns"][col] = val
+                else:
+                    record["columns"][col] += val
+
+            return True
+        except Exception:
             return False
-        updated_value = self.table[primary_key] # get reference to record so we can update in place
-        for col, val in columns: # iterate over table to apply update
-            updated_value[col] += val # update value with new value
-        return True
         
     
     """

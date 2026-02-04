@@ -2,6 +2,11 @@ import pytest
 from lstore.db import Database
 from lstore.query import Query
 
+"""
+# Initializes a test database setup
+# Creates a table and a Query object for testing
+# Returns Database, Table, and Query objects
+"""
 def setup_db():
     db = Database()
     table = db.create_table("test", 3, 0)  # 3 columns, column 0 is primary key
@@ -103,7 +108,6 @@ def test_select_version():
 # Returns True if update is succesful
 # Returns False if no records exist with given key or if the target record cannot be accessed due to 2PL locking
 """
-@pytest.mark.xfail(reason="update logic incomplete")
 def test_update():
     # update(primary_key, *columns)
     _, _, query = setup_db()
@@ -119,7 +123,6 @@ def test_update():
 # Returns the summation of the given range upon success
 # Returns False if no record exists in the given range
 """
-@pytest.mark.xfail(reason="sum not implemented")
 def test_sum():
     # sum(start_range, end_range, aggregate_column_index)
     _, _, query = setup_db()
