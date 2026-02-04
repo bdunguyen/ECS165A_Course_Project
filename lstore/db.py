@@ -19,7 +19,8 @@ class Database():
     :param num_columns: int     #Number of Columns: all columns are integer
     :param key: int             #Index of table key in columns
     """
-    def create_table(self, name, num_columns, key_index):
+
+    def create_table(self, name, num_columns, key_index): # create a table, put in the self.table dict
         # checks if a table already exists
         if name in self.tables:
             raise Exception("WARNING: Cannot Add. Table already exists.")

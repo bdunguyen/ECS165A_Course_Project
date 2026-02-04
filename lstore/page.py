@@ -1,7 +1,7 @@
 
 class Page:
 
-    def __init__(self): 
+    def __init__(self):
         self.num_records = 0
         self.data = bytearray(4096)
         self.curr = 0
@@ -20,6 +20,13 @@ class Page:
                 self.curr += 1
             self.num_records += 1
 
-            return True
+            return True # determine success behavior later
         else:
-            return False
+            pass
+        
+        
+### test
+
+test = Page()
+test.write('hello world')
+print(test.data)

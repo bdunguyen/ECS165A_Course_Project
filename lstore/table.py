@@ -6,7 +6,7 @@ RID_COLUMN = 1
 TIMESTAMP_COLUMN = 2
 SCHEMA_ENCODING_COLUMN = 3
 
-
+from page import Page
 class Record:
 
     def __init__(self, rid, key, columns):
@@ -28,7 +28,10 @@ class Table:
         self.page_directory = {} # tuple? the (index, page object)?
         self.index = Index(self)
         self.merge_threshold_pages = 50  # The threshold to trigger a merge
-        pass
+        
+        # pre-allocate for base and tail pages upon initialization
+        self.bases = {f'b{i}': Page() for i in range(num_columns)}
+        self.tails = {f't{i}': Page() for i in range(num_columns)}
 
     def __merge(self):
         print("merge is happening")

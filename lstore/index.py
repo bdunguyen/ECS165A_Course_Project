@@ -2,19 +2,40 @@
 A data strucutre holding indices for various columns of a table. Key column should be indexd by default, other columns can be indexed through this object. Indices are usually B-Trees, but other data structures can be used as well.
 """
 
+# GOAL: do hash-based indexing
+
 class Index:
 
     def __init__(self, table):
         # One index for each table. All our empty initially.
         self.indices = [None] *  table.num_columns
+
         pass
 
     """
     # returns the location of all records with the given value on column "column"
     """
 
-    def locate(self, column, value):
-        pass
+    def sort(self, column):
+        if self.indices[column] is None:
+            pass
+        else:
+            return sorted()
+
+
+    def locate(self, column, value): # with cumulative update
+
+        '''
+        Docstring for locate: locate the base record, then use indirection to locate latest update.
+        
+        :param self: 
+        :param column: column number
+        :param value: value to search for
+        '''
+
+        for i in range()
+        
+  
 
     """
     # Returns the RIDs of all records with values in column "column" between "begin" and "end"

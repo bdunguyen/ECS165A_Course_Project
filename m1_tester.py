@@ -8,7 +8,7 @@ db = Database()
 #   Student Id and 4 grades
 #   The first argument is name of the table
 #   The second argument is the number of columns
-#   The third argument is determining the which columns will be primay key
+#   The third argument is determining the which columns will be primary key
 #       Here the first column would be student id and primary key
 grades_table = db.create_table('Grades', 5, 0)
 
@@ -22,13 +22,17 @@ number_of_records = 1000
 number_of_aggregates = 100
 seed(3562901)
 
-for i in range(0, number_of_records):
+
+
+
+for i in range(0, number_of_records): # for every record, assign a key to it
     key = 92106429 + randint(0, number_of_records)
 
-    #skip duplicate keys
+    # reassigns key if duplicated
     while key in records:
         key = 92106429 + randint(0, number_of_records)
 
+    # records have data for their key and 4 more random integers
     records[key] = [key, randint(0, 20), randint(0, 20), randint(0, 20), randint(0, 20)]
     query.insert(*records[key])
     # print('inserted', records[key])
@@ -39,7 +43,7 @@ for key in records:
     # select function will return array of records 
     # here we are sure that there is only one record in t hat array
     record = query.select(key, 0, [1, 1, 1, 1, 1])[0]
-    error = False
+    error = False   
     for i, column in enumerate(record.columns):
         if column != records[key][i]:
             error = True
