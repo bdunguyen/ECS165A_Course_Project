@@ -131,26 +131,16 @@ class Query:
     """
     def update(self, primary_key, *columns):
         try:
-            # find record by primary key
-            RID_to_update = None
-            for RID, record in self.table.page_directory.items():
-                if record["columns"][self.table.key] == primary_key:
-                    RID_to_update = RID
-                    break
-
-            if RID_to_update is None:
-                return False  # key not found
-
-            # update columns
-            record = self.table.page_directory[RID_to_update]
-            for col, val in columns:  # columns = list of (col_index, value)
-                if record["columns"][col] is None:
-                    record["columns"][col] = val
-                else:
-                    record["columns"][col] += val
-
-            return True
-        except Exception:
+            # find base record
+            for RID, record in self.table.page_directory.items(): # go through page
+                if record["columns"][self.table.key] == primary_key: # if primary key match table key
+                    for i in range(self.table.num_columns): # go through column
+                        if columns[i] is not None: # if column not empty
+                            record["columns"][i] = columns[i] # update column
+                    return True
+                return False
+            
+        except Exception: # if no record return false
             return False
         
     
@@ -167,13 +157,13 @@ class Query:
             total = 0 # initialize sum
             in_record = False # set in_record to false
 
-            for record in self.table.page_directory.values():
-                key = record["columns"][self.table.key]
-                if start_range <= key <= end_range:
-                    value = record["columns"][aggregate_column_index]
-                    if value is not None:
-                        total += value
-                    in_record = True
+            for record in self.table.page_directory.values(): # go through page in table
+                key = record["columns"][self.table.key] # find key
+                if start_range <= key <= end_range: # if key is within range
+                    value = record["columns"][aggregate_column_index] # set value
+                    if value is not None: # if value not empty
+                        total += value # add value to total
+                    in_record = True # change in_record to true
 
                 if not in_record:
                     return False
@@ -182,32 +172,8 @@ class Query:
         except Exception:
             return False
 
-
-            #for key in range(start_range, end_range + 1):
-            #if key not in self.table: # if key does not exist in table, go to next key
-                #continue
-
-            #record = self.select(key, 0, aggregate_column_index) # search through db and find key value at key
-
-            """ if record is False: # if key is empty, return False
-                return False
-            
-            if len(record) == 0: # if there is no record, continue
-                continue
-            
-            value = record[0][0] # set value to the first value of record
-
-            if value is None: # if there value is None, continue
-                continue
-
-            total += value # otherwise, add value to total dataframe
-            in_record = True # set in_record to True to indicate successful selection
-
-        if in_record == True: # if seccessful selection, return total
-            return total
-        
-        else:
-            return False # if all is uncessful, false """
+        total = 0
+        in_record = False
     
     """
     :param start_range: int         # Start of the key range to aggregate 
