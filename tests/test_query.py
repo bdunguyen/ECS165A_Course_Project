@@ -9,7 +9,7 @@ from lstore.query import Query
 """
 def setup_db():
     db = Database()
-    table = db.create_table("test", 3, 0)  # 3 columns, column 0 is primary key
+    table = db.create_table("test", 3, 0) # 3 columns, column 0 is primary key
     query = Query(table)
     return db, table, query
 

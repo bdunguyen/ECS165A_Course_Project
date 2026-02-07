@@ -49,7 +49,7 @@ class Index:
             # raise error
             return -1
         
-        index_dict = defaultdict[list]
+        index_dict = defaultdict(list)
         
         self.indices[column_number] = index_dict
 

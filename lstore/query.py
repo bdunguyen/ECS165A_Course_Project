@@ -38,8 +38,6 @@ class Query:
     # Returns False if insert fails for whatever reason
     """
     def insert(self, *columns):
-        
-
         try:
             #col count
             if len(columns) != self.table.num_columns:
@@ -80,7 +78,6 @@ class Query:
     # Assume that select will never be called on a key that doesn't exist
     """
     def select(self, search_key, search_key_index, projected_columns_index):
-
         try:
             RIDs = self.table.index.locate(search_key_index, search_key)
 
@@ -93,7 +90,7 @@ class Query:
                     continue
 
                 else: 
-                    projected = []
+                    projected = [] 
 
                     for i in range(self.table.num_columns):
                         if projected_columns_index[i] == 1:
@@ -138,7 +135,7 @@ class Query:
                         if columns[i] is not None: # if column not empty
                             record["columns"][i] = columns[i] # update column
                     return True
-                return False
+            return False
             
         except Exception: # if no record return false
             return False
