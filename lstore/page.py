@@ -14,19 +14,9 @@ class Page:
             return False
 
     def write(self, value):
-        if self.has_capacity(value):
-            for i in range(len(value)):
-                self.data[self.curr] = ord(value[i]) # adds the data in the appropriate place in the bytearray
-                self.curr += 1
-            self.num_records += 1
+        for i in range(len(value)):
+            self.data[self.curr] = ord(value[i]) # adds the data in the appropriate place in the bytearray
+            self.curr += 1
+        self.num_records += 1
 
-            return True # determine success behavior later
-        else:
-            pass
-        
-        
-### test
-
-test = Page()
-test.write('hello world')
-print(test.data)
+        return True # determine success behavior later

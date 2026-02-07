@@ -24,7 +24,7 @@ class Database():
         # checks if a table already exists
         if name in self.tables:
             raise Exception("WARNING: Cannot Add. Table already exists.")
-        table = Table(name, num_columns, key_index)
+        table = Table(name, num_columns, key_index) # key index is the index for the primary key col
         self.tables[name] = table
         return table
     

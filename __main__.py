@@ -11,7 +11,7 @@ keys = []
 
 insert_time_0 = process_time()
 for i in range(0, 10000):
-    query.insert(906659671 + i, 93, 0, 0, 0)
+    query.insert(906659671 + i, 93, 0, 0, 0) # 1st col student id
     keys.append(906659671 + i)
 insert_time_1 = process_time()
 

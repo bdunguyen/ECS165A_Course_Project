@@ -20,7 +20,7 @@ class Query:
     # Returns True upon succesful deletion
     # Return False if record doesn't exist or is locked due to 2PL
     """
-    def delete(self, primary_key):
+    def delete(self, primary_key): # 1. check if enough space, if not add a tail page to tail dir. 2. then update
         try:
             RIDs= self.table.index.locate(self.table.key, primary_key)
             if not RIDs:
@@ -37,31 +37,9 @@ class Query:
     # Return True upon succesful insertion
     # Returns False if insert fails for whatever reason
     """
-    def insert(self, *columns):
+    def insert(self, *columns): # 1. check if space left, if not add a page to base page dir. 2. then insert into that base page
         
-
-        try:
-            #col count
-            if len(columns) != self.table.num_columns:
-                return False
-            
-            schema_encoding = '0' * self.table.num_columns
-
-            #tuple -> List
-
-            columns_list = []
-            for c in columns:
-                columns_list.append(c)
-
-            success = self.table.insert_record(columns, schema_encoding)
-
-            if success:
-                return True
-            else:
-                return False
-            
-        except Exception:
-            return False
+        pass
 
     
     """
@@ -73,7 +51,7 @@ class Query:
     # Returns False if record locked by TPL
     # Assume that select will never be called on a key that doesn't exist
     """
-    def select(self, search_key, search_key_index, projected_columns_index):
+    def select(self, search_key, search_key_index, projected_columns_index): # 
 
         try:
             RIDs = self.table.index.locate(search_key_index, search_key)
@@ -111,7 +89,7 @@ class Query:
     # :param search_key: the value you want to search based on
     # :param search_key_index: the column index you want to search based on
     # :param projected_columns_index: what columns to return. array of 1 or 0 values.
-    # :param relative_version: the relative version of the record you need to retreive.
+    # :param relative_version: the relative version of the record you need to retreive. (new param)
     # Returns a list of Record objects upon success
     # Returns False if record locked by TPL
     # Assume that select will never be called on a key that doesn't exist
@@ -125,7 +103,7 @@ class Query:
     # Returns True if update is succesful
     # Returns False if no records exist with given key or if the target record cannot be accessed due to 2PL locking
     """
-    def update(self, primary_key, *columns):
+    def update(self, primary_key, *columns): # 1. check if enough space, if not add a tail page to tail dir. 2. then update
         if primary_key not in self.table: # if key does not exist
             return False
         updated_value = self.table[primary_key] # get reference to record so we can update in place
