@@ -1,4 +1,5 @@
 from collections import defaultdict
+
 """
 A data strucutre holding indices for various columns of a table. Key column should be indexd by default, other columns can be indexed through this object. Indices are usually B-Trees, but other data structures can be used as well.
 """
@@ -44,16 +45,12 @@ class Index:
     """
 
     def create_index(self, column_number):
-
-        if self.indices[column_number] != None:
-            # raise error
-            return -1
+        pages = self.table.b_pages_dir[column_number]
+        for i in range(len(pages)): # for i in the range of the list that contains all pages of the column
+            for j in range(len(pages[i])):
+                pass
+        # self.indices[column_number] = {j: []}
         
-        index_dict = defaultdict(list)
-        
-        self.indices[column_number] = index_dict
-
-        # TODO: Add creating index from table with values already in it later?
 
     """
     # optional: Drop index of specific column

@@ -1,5 +1,6 @@
-from lstore.index import Index
+from index import Index
 from time import time
+from page import Page
 
 INDIRECTION_COLUMN = 0
 RID_COLUMN = 1
@@ -25,9 +26,12 @@ class Table:
         self.name = name
         self.key = key
         self.num_columns = num_columns # this would be the number of pages
-        self.page_directory = {} # tuple? the (index, page object)?
         self.index = Index(self)
         self.merge_threshold_pages = 50  # The threshold to trigger a merge
+        
+        self.b_pages_dir = {i:[Page()] for i in range(num_columns)} # base page directory
+        self.t_pages_dir = {} # tail page directory
+
         pass
 
     def __merge(self):

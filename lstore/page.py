@@ -1,4 +1,5 @@
 
+# ALL CODE HERE WRITTEN SPECIFICIALLY FOR INTEGER TYPE 0-255.
 class Page:
 
     def __init__(self): 
@@ -8,18 +9,17 @@ class Page:
 
     def has_capacity(self, value): # checks if the page is full
         space = len(self.data)
-        if space - self.curr - len(value) >= 0: # check if there is enough space
+        if space >= self.curr: 
             return True
-        else:
+        else: 
             return False
 
     def write(self, value):
         if self.has_capacity(value):
-            for i in range(len(value)):
-                self.data[self.curr] = ord(value[i]) # adds the data in the appropriate place in the bytearray
-                self.curr += 1
-            self.num_records += 1
+            self.data[self.curr] = value
 
             return True
         else:
             return False
+        
+  
