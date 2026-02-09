@@ -9,6 +9,7 @@ class Index:
     def __init__(self, table):
         # One index for each table. All our empty initially.
         self.indices = [None] *  table.num_columns
+        self.table = table
 
         # each index has a dictionary of the column name (key: possible values in that column, value: List:[RIDs])
 
@@ -26,7 +27,7 @@ class Index:
         if self.indices[column] == None:
             return [] # return empty list because we don't have any rids
         
-        return self.indices[column][value]
+        return self.indices[column][value] # return list of RIDS (which are lists themselves)
 
     """
     # Returns the RIDs of all records with values in column "column" between "begin" and "end"
@@ -44,12 +45,12 @@ class Index:
     # optional: Create index on specific column
     """
 
-    def create_index(self, column_number):
+    def create_index(self, column_number): 
+        self.indices[column_number] = {}
         pages = self.table.b_pages_dir[column_number]
-        for i in range(len(pages)): # for i in the range of the list that contains all pages of the column
-            for j in range(len(pages[i])):
-                pass
-        # self.indices[column_number] = {j: []}
+        for i in range(len(pages)): # iterate through all pages in the column
+           for j in range(len(pages[i])): # iterate 
+            pass
         
 
     """
@@ -58,3 +59,5 @@ class Index:
 
     def drop_index(self, column_number):
         pass
+
+

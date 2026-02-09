@@ -29,12 +29,12 @@ class Table:
         self.index = Index(self)
         self.merge_threshold_pages = 50  # The threshold to trigger a merge
         
-        self.b_pages_dir = {i:[Page()] for i in range(num_columns)} # base page directory
-        self.t_pages_dir = {} # tail page directory
+        self.b_pages_dir = {i:[Page()] for i in range(num_columns + 4)} # base page directory
+        self.t_pages_dir = {i: [] for i in range(num_columns + 4)} # tail page directory
 
         pass
 
     def __merge(self):
         print("merge is happening")
         pass
- 
+
