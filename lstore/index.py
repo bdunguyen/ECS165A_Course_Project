@@ -25,9 +25,6 @@ class Index:
                     self.indices[key_col_no] = {int.from_bytes(self.table.b_pages_dir[key_col_no][i].data[j: j + 5], "big"): (key_col_no, i, j)} # assign key value to RID
         else:
             raise Exception('Index already exists.')
-    
-
-
 
         # self.indices[key_col_no] = {self.table.b_pages_dir[key_col_no][i]: }
 
