@@ -86,7 +86,7 @@ class Query:
                 elif k ==SCHEMA_ENCODING_COLUMN:
                     value = schema_encoding
                 else:
-                    value = columns[k -4]
+                    value = columns[k -3]
 
                 if not page.write(value):
                     return False
