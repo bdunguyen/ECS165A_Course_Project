@@ -1,6 +1,6 @@
-from index import Index
+from lstore.index import Index
 from time import time
-from page import Page
+from lstore.page import Page
 
 RID_COLUMN = 0
 INDIRECTION_COLUMN = 1
@@ -11,8 +11,6 @@ class Record:
 
     def __init__(self, rid, key, columns):
         self.rid = rid # tuple of coordinates (col_no, page_no, index)
-        self.indirection = None
-        self.se = '0' * columns
         self.key = key # key column no.
         self.columns = columns # number of columns
 

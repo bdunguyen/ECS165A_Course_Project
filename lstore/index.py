@@ -1,5 +1,5 @@
 from collections import defaultdict
-from page import Page
+from lstore.page import Page
 
 """
 A data strucutre holding indices for various columns of a table. Key column should be indexd by default, other columns can be indexed through this object. Indices are usually B-Trees, but other data structures can be used as well.
@@ -39,9 +39,9 @@ class Index:
         
         # check if we have index
         if self.indices[column] == None:
-            return [] # return empty list because we don't have any rids
+            return -1 # return empty list because we don't have any rids
         
-        return self.indices[column][value] # return list of RIDS (which are lists themselves)
+        return self.indices[column][value] # returns RID tuple
 
     """
     # Returns the RIDs of all records with values in column "column" between "begin" and "end"
