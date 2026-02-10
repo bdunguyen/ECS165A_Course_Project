@@ -1,6 +1,7 @@
 from lstore.table import Table, Record
 from lstore.index import Index
 from lstore.page import Page
+from time import time
 
 
 class Query:
@@ -55,7 +56,58 @@ class Query:
     # Returns False if insert fails for whatever reason
     """
     def insert(self, *columns):
-        pass
+        RID_COLUMN = 0
+        INDIRECTION_COLUMN = 1
+        SCHEMA_ENCODING_COLUMN = 2
+        
+        try:
+            if len(columns) != self.table.num_columns:
+                return False
+            
+            primary = columns[self.table.key]
+            if primary in self.table.page_directory:
+                return False
+        
+            indirection = 0
+            schema_encoding = 0    
+            rid_value = primary
+
+
+            RID_list = self.getRID()
+
+            for i in range(len(RID_list)):
+                k, pg_no, rec_no = RID_list[i]
+                page = self.table.b_pages_dir[k][pg_no]
+
+                if k ==RID_COLUMN:
+                    value = rid_value
+                elif k ==INDIRECTION_COLUMN:
+                    value = indirection
+                elif k ==SCHEMA_ENCODING_COLUMN:
+                    value = schema_encoding
+                else:
+                    value = columns[k -4]
+
+                if not page.write(value):
+                    return False
+            
+            self.table.page_directory[primary] = RID_list
+
+            return True
+        
+        except:
+            return False
+
+
+
+
+
+        return True
+
+
+
+
+
 
     
     """
