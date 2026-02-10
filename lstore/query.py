@@ -102,8 +102,6 @@ class Query:
 
 
 
-        return True
-
 
 
 
