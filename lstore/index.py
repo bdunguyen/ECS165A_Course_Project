@@ -1,5 +1,5 @@
 from collections import defaultdict
-from page import Page
+from lstore.page import Page
 
 """
 A data strucutre holding indices for various columns of a table. Key column should be indexd by default, other columns can be indexed through this object. Indices are usually B-Trees, but other data structures can be used as well.
@@ -25,9 +25,6 @@ class Index:
                     self.indices[key_col_no] = {int.from_bytes(self.table.b_pages_dir[key_col_no][i].data[j: j + 5], "big"): (key_col_no, i, j)} # assign key value to RID
         else:
             raise Exception('Index already exists.')
-    
-
-
 
         # self.indices[key_col_no] = {self.table.b_pages_dir[key_col_no][i]: }
 
