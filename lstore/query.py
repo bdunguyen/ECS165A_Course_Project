@@ -13,7 +13,6 @@ class Query:
     """
     def __init__(self, table):
         self.table = table
-        pass
 
     
     """
@@ -24,6 +23,7 @@ class Query:
     """
     def delete(self, primary_key):
         try:
+
             RIDs= self.table.index.locate(self.table.key, primary_key)
             if not RIDs:
                 return False
@@ -33,6 +33,7 @@ class Query:
     
         except Exception:
             return False
+        
     def getRID(self):
         RID = []
         for k,v in self.table.b_pages_dir.items():
@@ -48,7 +49,6 @@ class Query:
                 
         
         return RID
-        
 
     """
     # Insert a record with specified columns
@@ -56,11 +56,9 @@ class Query:
     # Returns False if insert fails for whatever reason
     """
     def insert(self, *columns):
-        RID_COLUMN = 0
-        INDIRECTION_COLUMN = 1
-        SCHEMA_ENCODING_COLUMN = 2
         
         try:
+            #col count
             if len(columns) != self.table.num_columns:
                 return False
             
@@ -86,7 +84,7 @@ class Query:
                 elif k ==SCHEMA_ENCODING_COLUMN:
                     value = schema_encoding
                 else:
-                    value = columns[k -3]
+                    value = columns[k -4]
 
                 if not page.write(value):
                     return False
@@ -95,17 +93,9 @@ class Query:
 
             return True
         
-        except:
+
+        except Exception:
             return False
-
-
-
-
-
-
-
-
-
 
     
     """
@@ -190,27 +180,8 @@ class Query:
     # Returns False if no record exists in the given range
     """
     def sum(self, start_range, end_range, aggregate_column_index):
-        try:
-            total = 0 # initialize sum
-            in_record = False # set in_record to false
 
-            for record in self.table.page_directory.values(): # go through page in table
-                key = record["columns"][self.table.key] # find key
-                if start_range <= key <= end_range: # if key is within range
-                    value = record["columns"][aggregate_column_index] # set value
-                    if value is not None: # if value not empty
-                        total += value # add value to total
-                    in_record = True # change in_record to true
-
-                if not in_record:
-                    return False
-                return total
-            
-        except Exception:
-            return False
-
-        total = 0
-        in_record = False
+        return self.sum_version(start_range, end_range, aggregate_column_index, 0)
     
     """
     :param start_range: int         # Start of the key range to aggregate 
@@ -222,7 +193,45 @@ class Query:
     # Returns False if no record exists in the given range
     """
     def sum_version(self, start_range, end_range, aggregate_column_index, relative_version):
-        pass
+        # NOTE: indirection of base page points to the most recent tail page of that record
+
+        if relative_version > 0: return False
+
+        # create a key for the rids..
+        self.table.index.key_index(0) # this will make the rids hashable
+
+        # variable to store the total sum
+        res = 0
+
+        # 1. we must find each record in the base pages. 
+        for key in range(start_range, end_range + 1):
+            # a) we look for each key in our base page dir for the primary key col
+            key_col_num, page_index, record_index = self.table.index.indices[self.table.key][key] # gives us a tuple (key_col_num, page, index on page)
+
+            # b) find the RID of the base page
+            base_rid = int.from_bytes(self.table.b_pages_dir[1][page_index].data[(record_index * 5) : (record_index * 5) + 5])
+
+            relative_version_copy = relative_version
+
+            # c) while relative version <= 0: check there is a version to go back to, go to indirection, go to that rid (keep track of where this is), increase relative version by 1
+                # RID_COLUMN = 0
+                # INDIRECTION_COLUMN = 1
+                # we can store the base page RID and if we ever run into it again in the indirection col, we know that is that last version.
+            while relative_version_copy <= 0:
+                indirection_rid = int.from_bytes(self.table.t_pages_dir[1][page_index].data[(record_index * 5) : (record_index * 5) + 5])
+                if indirection_rid == None or indirection_rid == base_rid:
+                    # this is the record that we want
+                    # add the value of the record in the specified column
+                    res += int.from_bytes(self.table.t_pages_dir[aggregate_column_index][page_index].data[(record_index * 5) : (record_index * 5) + 5])
+                    # exit the loop
+                    break
+                # otherwise, we go to the location of the indirection rid
+                # we look at where our record is located
+                key_col_num, page_index, record_index = self.table.index.indices[0][indirection_rid]
+                # update relative version
+                relative_version_copy += 1
+            
+        return res
 
     
     """
