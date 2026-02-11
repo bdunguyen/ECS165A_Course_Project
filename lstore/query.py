@@ -2,7 +2,7 @@ from lstore.table import Table, Record
 from lstore.index import Index
 from lstore.page import Page
 from time import time
-from lstore.table import RID_COLUMN, INDIRECTION_COLUMN, SCHEMA_ENCODING_COLUMN
+from lstore.table import INDIRECTION_COLUMN, SCHEMA_ENCODING_COLUMN
 
 
 
