@@ -34,7 +34,7 @@ class Query:
         except Exception:
             return False
         
-    def getRID(self, type): # find the next available space to add data for a whole record
+    def assignRID(self, type): # find the next available space to add data for a whole record
         RID = []
         if type == 'b':
             for k,v in self.table.b_pages_dir.items():
@@ -69,7 +69,7 @@ class Query:
     """
     def insert(self, *columns):
         try: 
-            RID = self.getRID('b') # assign RID to the new entry
+            RID = self.assignRID('b') # assign RID to the new entry
 
             for i in range(len(*columns)): # insertion process
                 self.table.b_pages_dir[i][RID[1]][RID[2]]
