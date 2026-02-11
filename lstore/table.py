@@ -5,6 +5,8 @@ from lstore.page import Page
 RID_COLUMN = 0
 INDIRECTION_COLUMN = 1
 SCHEMA_ENCODING_COLUMN = 2
+TIMESTAMP_COLUMN = 3
+USER_COLUMN_START = 4
 
 
 class Record:
@@ -14,6 +16,7 @@ class Record:
         self.indirection = indirection 
         self.se = se
         self.columns = columns # column data 
+        
 
 class Table:
 
@@ -28,6 +31,8 @@ class Table:
         
         self.b_pages_dir = {i: [Page()] for i in range(num_columns + 4)} # base page directory
         self.t_pages_dir = {i: [] for i in range(num_columns + 4)} # tail page directory
+
+        self.page_directory = {}  # maps primary_key -> list of (col_no, page_no, slot_no) for base record
         
         self.num_columns = num_columns # this would be the number of pages
         self.index = Index(self)

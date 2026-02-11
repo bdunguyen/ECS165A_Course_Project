@@ -2,6 +2,7 @@ from lstore.table import Table, Record
 from lstore.index import Index
 from lstore.page import Page
 from time import time
+from lstore.table import INDIRECTION_COLUMN, SCHEMA_ENCODING_COLUMN
 
 
 class Query:
@@ -23,14 +24,20 @@ class Query:
     """
     def delete(self, primary_key):
         try:
-
-            RIDs= self.table.index.locate(self.table.key, primary_key)
-            if not RIDs:
+            # record must exist
+            if primary_key not in self.table.page_directory:
                 return False
-        
-            RID = RIDs[0]
-            return bool(self.table.delete_record(RID))
-    
+
+            base_rid = self.table.page_directory[primary_key]
+
+            # mark indirection as -1
+            ind_page, ind_slot = base_rid[INDIRECTION_COLUMN]
+            self.table.b_pages_dir[INDIRECTION_COLUMN][ind_page].data[
+                ind_slot*5:(ind_slot+1)*5
+            ] = (-1).to_bytes(5, "big", signed=True)
+
+            return True
+
         except Exception:
             return False
         
@@ -76,6 +83,8 @@ class Query:
             
             
             self.table.key_ind(Record(RID, None, 0 * self.table.num_records, *columns))
+
+            self.table.page_directory[columns[self.table.key]] = RID # add RID to page_directory so update() and delete() can access
 
             return True 
         except:
@@ -135,16 +144,71 @@ class Query:
     """
     def update(self, primary_key, *columns):
         try:
-            # find base record
-            for RID, record in self.table.page_directory.items(): # go through page
-                if record["columns"][self.table.key] == primary_key: # if primary key match table key
-                    for i in range(self.table.num_columns): # go through column
-                        if columns[i] is not None: # if column not empty
-                            record["columns"][i] = columns[i] # update column
-                    return True
-            return False
-            
-        except Exception: # if no record return false
+            # base RID must exist in page directory
+            if primary_key not in self.table.page_directory:    
+                return False
+
+            base_rid = self.table.page_directory[primary_key] # get base rid for columns
+
+            # read base indirection
+            ind_page, ind_slot = base_rid[INDIRECTION_COLUMN]
+            base_ind_page = self.table.b_pages_dir[INDIRECTION_COLUMN][ind_page]
+            prev_tail = int.from_bytes(
+                base_ind_page.data[ind_slot*5:(ind_slot+1)*5], "big"
+            )
+
+            # allocate tail slots
+            tail_rid = {}
+            for col in range(self.table.num_columns + 4):
+                if (
+                    len(self.table.t_pages_dir[col]) == 0
+                    or self.table.t_pages_dir[col][-1].num_records >= 819
+                ):
+                    self.table.t_pages_dir[col].append(Page())
+
+                page_no = len(self.table.t_pages_dir[col]) - 1
+                slot_no = self.table.t_pages_dir[col][page_no].num_records
+                tail_rid[col] = (page_no, slot_no)
+
+            # write tail record
+            schema = 0
+
+            for col in range(self.table.num_columns + 4):
+                page_no, slot_no = tail_rid[col]
+                page = self.table.t_pages_dir[col][page_no]
+
+                if col == INDIRECTION_COLUMN:
+                    page.write(prev_tail if prev_tail != 0 else primary_key)
+
+                elif col == SCHEMA_ENCODING_COLUMN:
+                    for i, v in enumerate(columns):
+                        if v is not None:
+                            schema |= (1 << i)
+                    page.write(schema)
+
+                elif col < 4:
+                    page.write(0)
+
+                else:
+                    user_col = col - 4
+                    if columns[user_col] is not None:
+                        page.write(columns[user_col])
+                    else:
+                        # copy base value
+                        base_page, base_slot = base_rid[col]
+                        base_page_obj = self.table.b_pages_dir[col][base_page]
+                        old_val = int.from_bytes(
+                            base_page_obj.data[base_slot*5:(base_slot+1)*5], "big"
+                        )
+                        page.write(old_val)
+
+            # update base indirection to newest tail
+            base_ind_page.data[ind_slot*5:(ind_slot+1)*5] = \
+                primary_key.to_bytes(5, "big")
+
+            return True
+
+        except Exception:
             return False
         
     
