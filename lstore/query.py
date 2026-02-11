@@ -1,7 +1,6 @@
 from lstore.table import Record
 from lstore.page import Page
 from time import time
-from lstore.table import INDIRECTION_COLUMN, SCHEMA_ENCODING_COLUMN
 
 
 class Query:
@@ -23,20 +22,14 @@ class Query:
     """
     def delete(self, primary_key):
         try:
-            # record must exist
-            if primary_key not in self.table.page_directory:
+
+            RIDs= self.table.index.locate(self.table.key, primary_key)
+            if not RIDs:
                 return False
-
-            base_rid = self.table.page_directory[primary_key]
-
-            # mark indirection as -1
-            ind_page, ind_slot = base_rid[INDIRECTION_COLUMN]
-            self.table.b_pages_dir[INDIRECTION_COLUMN][ind_page].data[
-                ind_slot*5:(ind_slot+1)*5
-            ] = (-1).to_bytes(5, "big", signed=True)
-
-            return True
-
+        
+            RID = RIDs[0]
+            return bool(self.table.delete_record(RID))
+    
         except Exception:
             return False
         
@@ -78,21 +71,14 @@ class Query:
             RID = self.assignRID('b') # assign RID to the new entry
             # print(RID)
 
-<<<<<<< Updated upstream
-            for i in range(len(*columns)): # insertion process
-                self.table.b_pages_dir[i][RID[1]][RID[2]]
-=======
             for i in range(len(columns)): # insertion process
                 page = self.table.b_pages_dir[i][RID[i][1]]
 
                 value = columns[i]
 
                 page.write(value)
->>>>>>> Stashed changes
             
             self.table.index.key_index(Record(RID, None, [0] * self.table.num_columns, *columns), self.table.key)
-
-            self.table.page_directory[columns[self.table.key]] = RID # add RID to page_directory so update() and delete() can access
 
             return True 
         except:
@@ -109,9 +95,32 @@ class Query:
     # Assume that select will never be called on a key that doesn't exist
     """
     def select(self, search_key, search_key_index, projected_columns_index):
+        try:
+            RIDs = self.table.index.locate(search_key_index, search_key)
+
+            results = []
+
+            for RIDs, record in self.table.page_directory.items():
+                data = record["columns"]
+
+                if data[search_key_index] != search_key:
+                    continue
+
+                else: 
+                    projected = [] 
+
+                    for i in range(self.table.num_columns):
+                        if projected_columns_index[i] == 1:
+                            projected.append(data[i]) 
+
+
+                key = data[self.table.key]
+                results.append(Record(RIDs, key, projected))
+
+            return results
         
-        return self.select_version(search_key, search_key_index, projected_columns_index, 0)
-        
+        except Exception:
+            return False
 
 
     
@@ -126,21 +135,7 @@ class Query:
     # Assume that select will never be called on a key that doesn't exist
     """
     def select_version(self, search_key, search_key_index, projected_columns_index, relative_version):
-
-        try:
-            rec = self.table.index.indices[search_key_index][search_key] # gives record
-            rec = rec.indirection # nav to latest tail
-
-            while relative_version < 0:
-                rec = rec.indirection
-                relative_version += 1
-
-                
-                rec.columns = [rec.columns[i] if projected_columns_index[i] == 1 else None for i in range(len(projected_columns_index))] 
-            return [rec]
-        
-        except Exception:
-            return False
+        pass
 
     
     """
@@ -150,71 +145,16 @@ class Query:
     """
     def update(self, primary_key, *columns):
         try:
-            # base RID must exist in page directory
-            if primary_key not in self.table.page_directory:    
-                return False
-
-            base_rid = self.table.page_directory[primary_key] # get base rid for columns
-
-            # read base indirection
-            ind_page, ind_slot = base_rid[INDIRECTION_COLUMN]
-            base_ind_page = self.table.b_pages_dir[INDIRECTION_COLUMN][ind_page]
-            prev_tail = int.from_bytes(
-                base_ind_page.data[ind_slot*5:(ind_slot+1)*5], "big"
-            )
-
-            # allocate tail slots
-            tail_rid = {}
-            for col in range(self.table.num_columns + 4):
-                if (
-                    len(self.table.t_pages_dir[col]) == 0
-                    or self.table.t_pages_dir[col][-1].num_records >= 819
-                ):
-                    self.table.t_pages_dir[col].append(Page())
-
-                page_no = len(self.table.t_pages_dir[col]) - 1
-                slot_no = self.table.t_pages_dir[col][page_no].num_records
-                tail_rid[col] = (page_no, slot_no)
-
-            # write tail record
-            schema = 0
-
-            for col in range(self.table.num_columns + 4):
-                page_no, slot_no = tail_rid[col]
-                page = self.table.t_pages_dir[col][page_no]
-
-                if col == INDIRECTION_COLUMN:
-                    page.write(prev_tail if prev_tail != 0 else primary_key)
-
-                elif col == SCHEMA_ENCODING_COLUMN:
-                    for i, v in enumerate(columns):
-                        if v is not None:
-                            schema |= (1 << i)
-                    page.write(schema)
-
-                elif col < 4:
-                    page.write(0)
-
-                else:
-                    user_col = col - 4
-                    if columns[user_col] is not None:
-                        page.write(columns[user_col])
-                    else:
-                        # copy base value
-                        base_page, base_slot = base_rid[col]
-                        base_page_obj = self.table.b_pages_dir[col][base_page]
-                        old_val = int.from_bytes(
-                            base_page_obj.data[base_slot*5:(base_slot+1)*5], "big"
-                        )
-                        page.write(old_val)
-
-            # update base indirection to newest tail
-            base_ind_page.data[ind_slot*5:(ind_slot+1)*5] = \
-                primary_key.to_bytes(5, "big")
-
-            return True
-
-        except Exception:
+            # find base record
+            for RID, record in self.table.page_directory.items(): # go through page
+                if record["columns"][self.table.key] == primary_key: # if primary key match table key
+                    for i in range(self.table.num_columns): # go through column
+                        if columns[i] is not None: # if column not empty
+                            record["columns"][i] = columns[i] # update column
+                    return True
+            return False
+            
+        except Exception: # if no record return false
             return False
         
     
@@ -246,27 +186,23 @@ class Query:
 
         # print(self.table.index.indices)
 
-        # create a key for the rids..
-        self.table.index.key_index(0) # this will make the rids hashable
-
         # variable to store the total sum
         res = 0
 
-        # 1. we must find each record in the base pages. 
+        # 1. we must find each record in the base pages.
+            # - start range: primary key is equal to start_range
+            # - end range: primary key is equal to end_range
         for key in range(start_range, end_range + 1):
             # a) we look for each key in our base page dir for the primary key col
-<<<<<<< Updated upstream
-            key_col_num, page_index, record_index = self.table.index.indices[self.table.key][key] # gives us a tuple (key_col_num, page, index on page)
-=======
             if key not in self.table.index.indices[self.table.key]:
                 continue
             
             base_record = self.table.index.indices[self.table.key][key] # this gives us the whole base record
->>>>>>> Stashed changes
 
             # b) find the RID of the base page
-            base_rid = int.from_bytes(self.table.b_pages_dir[1][page_index].data[(record_index * 5) : (record_index * 5) + 5])
+            base_rid = base_record.rid
 
+            cur_record = base_record # we initialize a cur_record
             relative_version_copy = relative_version
 
             # c) while relative version <= 0: check there is a version to go back to, go to indirection, go to that rid (keep track of where this is), increase relative version by 1
@@ -274,13 +210,6 @@ class Query:
                 # INDIRECTION_COLUMN = 1
                 # we can store the base page RID and if we ever run into it again in the indirection col, we know that is that last version.
             while relative_version_copy <= 0:
-<<<<<<< Updated upstream
-                indirection_rid = int.from_bytes(self.table.t_pages_dir[1][page_index].data[(record_index * 5) : (record_index * 5) + 5])
-                if indirection_rid == None or indirection_rid == base_rid:
-                    # this is the record that we want
-                    # add the value of the record in the specified column
-                    res += int.from_bytes(self.table.t_pages_dir[aggregate_column_index][page_index].data[(record_index * 5) : (record_index * 5) + 5])
-=======
                 if cur_record.indirection == None or cur_record.indirection.rid == base_rid:
                     # this is the record that we want
                     # add the value of the record in the specified column
@@ -288,13 +217,12 @@ class Query:
                     # print("value to add:", cur_record.columns[aggregate_column_index])
         
                     res += cur_record.columns[aggregate_column_index]
->>>>>>> Stashed changes
                     # exit the loop
                     break
         
                 # otherwise, we go to the location of the indirection rid
                 # we look at where our record is located
-                key_col_num, page_index, record_index = self.table.index.indices[0][indirection_rid]
+                cur_record = cur_record.indirection
                 # update relative version
                 relative_version_copy += 1
             
@@ -317,3 +245,4 @@ class Query:
             u = self.update(key, *updated_columns)
             return u
         return False
+
