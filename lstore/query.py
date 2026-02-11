@@ -113,42 +113,49 @@ class Query:
     """
     def select_version(self, search_key, search_key_index, projected_columns_index, relative_version):
         if relative_version > 0: return False
+        res = [] # a list of Record objects upon success
 
-        try:
-            res = [] # a list of Record objects upon success
-
-            if search_key not in self.table.index.indices[search_key_index]:
-                raise Exception
-
-            base_record = self.table.index.indices[search_key_index][search_key] # this gives us the whole base record
-
-            base_rid = base_record.rid
-
-            if base_record.indirection == None:
-                cur_record = base_record # we initialize a cur_record
-            else:
-                cur_record = base_record.indirection
-            
-            relative_version_copy = relative_version
-
-            while relative_version_copy <= 0:
-                if cur_record.indirection == None or cur_record.rid == base_rid:
-                    break
-                # otherwise, we go to the location of the indirection rid
-                # we look at where our record is located
-                cur_record = cur_record.indirection
-                # update relative version
-                relative_version_copy += 1
-
-            # return_record_cols = [cur_record.columns[i] if projected_columns_index[i] == 1 else None for i in range(len(projected_columns_index))] 
-            # return_record = Record(cur_record.rid, cur_record.indirection, cur_record.se, return_record_cols)
-
-            res.append(cur_record)
-            
-            return res
-        
-        except Exception:
+        if search_key not in self.table.index.indices[search_key_index]:
             return False
+        
+        # print("search_key_index:", search_key_index)
+        # print("search_key:", search_key)
+
+        # print("self.table.index.indices[search_key_index]:", self.table.index.indices[search_key_index][search_key])
+
+
+        base_record = self.table.index.indices[search_key_index][search_key] # this gives us the whole base record
+
+
+        #print("base:", base_record.columns)
+
+        if base_record.indirection == None:
+            print(base_record.columns)
+            res.append(base_record)
+            return res
+        else:
+            cur_record = base_record.indirection
+        
+        relative_version_copy = relative_version
+
+        while relative_version_copy < 0:
+            print("hi")
+            if cur_record.indirection == None or cur_record == base_record:
+                break
+            # otherwise, we go to the location of the indirection rid
+            # we look at where our record is located
+            cur_record = cur_record.indirection
+            # update relative version
+            relative_version_copy += 1
+
+        # return_record_cols = [cur_record.columns[i] if projected_columns_index[i] == 1 else None for i in range(len(projected_columns_index))] 
+        # return_record = Record(cur_record.rid, cur_record.indirection, cur_record.se, return_record_cols)
+
+        #print("cur:", cur_record.columns)
+
+        res.append(cur_record)
+        
+        return res
 
     
     """
@@ -189,7 +196,12 @@ class Query:
 
             RID = self.assignRID('t')
 
-            latest_tail_record = Record(RID, latest_record, se, *new_columns)
+            # print('lastest_record:', latest_record.columns)
+
+            latest_tail_record = Record(RID, None, se, *new_columns)
+            latest_tail_record.indirection = latest_record
+
+            # print("lasest tail rec indirection:", latest_tail_record.indirection.columns)
 
             base_record.indirection = latest_tail_record
 
@@ -276,7 +288,7 @@ class Query:
                     # exit the loop
                     break
 
-                print("cur_record.columns[aggregate_column_index]:", cur_record.columns[aggregate_column_index])
+                #print("cur_record.columns[aggregate_column_index]:", cur_record.columns[aggregate_column_index])
                 # otherwise, we go to the location of the indirection rid
                 # we look at where our record is located
                 cur_record = cur_record.indirection
@@ -302,3 +314,144 @@ class Query:
             u = self.update(key, *updated_columns)
             return u
         return False
+
+
+
+from lstore.db import Database
+
+from random import choice, randint, sample, seed
+
+db = Database()
+# Create a table  with 5 columns
+#   Student Id and 4 grades
+#   The first argument is name of the table
+#   The second argument is the number of columns
+#   The third argument is determining the which columns will be primay key
+#       Here the first column would be student id and primary key
+grades_table = db.create_table('Grades', 5, 0)
+
+# create a query class for the grades table
+query = Query(grades_table)
+
+# dictionary for records to test the database: test directory
+records = {}
+
+number_of_records = 1
+number_of_aggregates = 1
+seed(3562901)
+
+for i in range(0, number_of_records):
+    key = 92106429 + randint(0, number_of_records)
+
+    #skip duplicate keys
+    while key in records:
+        key = 92106429 + randint(0, number_of_records)
+
+    records[key] = [key, randint(0, 20), randint(0, 20), randint(0, 20), randint(0, 20)]
+    query.insert(*records[key])
+    print('inserted', records[key])
+print("Insert finished")
+
+# Check inserted records using select query
+for key in records:
+    print('select on', key, ':', records[key])
+
+# Check inserted records using select query
+for key in records:
+    # select function will return array of records 
+    # here we are sure that there is only one record in t hat array
+    # check for retreiving version -1. Should retreive version 0 since only one version exists.
+    record = query.select_version(key, 0, [1, 1, 1, 1, 1], -1)[0]
+    error = False
+    for i, column in enumerate(record.columns):
+        if column != records[key][i]:
+            error = True
+    if error:
+        print('select error on', key, ':', record, ', correct:', records[key])
+    else:
+        pass
+        # print('select on', key, ':', record)
+
+updated_records = {}
+for key in records:
+    updated_columns = [None, None, None, None, None]
+    updated_records[key] = records[key].copy()
+    for i in range(2, grades_table.num_columns):
+        # updated value
+        value = randint(0, 20)
+        updated_columns[i] = value
+        # update our test directory
+        updated_records[key][i] = value
+    print("Update: ", updated_columns)
+    query.update(key, *updated_columns)
+
+    #check version -1 for record
+    record = query.select_version(key, 0, [1, 1, 1, 1, 1], -1)[0]
+    error = False
+    for j, column in enumerate(record.columns):
+        print("j:", j)
+        if column != records[key][j]:
+            print("record:", record.columns) # we have
+            print('column:', column, 'records:', records[key][j])
+            error = True
+    if error:
+        print('update error on', records[key], 'and', updated_columns, ':', record.indirection.columns, ', correct:', records[key])
+    else:
+        pass
+        # print('update on', original, 'and', updated_columns, ':', record)
+    print("-1 Done")
+
+    #check version -2 for record
+    record = query.select_version(key, 0, [1, 1, 1, 1, 1], -2)[0]
+    error = False
+    for j, column in enumerate(record.columns):
+        if column != records[key][j]:
+            error = True
+    if error:
+        print('update error on', records[key], 'and', updated_columns, ':', record.columns, ', correct:', records[key])
+    else:
+        pass
+        # print('update on', original, 'and', updated_columns, ':', record)
+    print("-2 Done")
+    
+    #check version 0 for record
+    record = query.select_version(key, 0, [1, 1, 1, 1, 1], 0)[0]
+    error = False
+    for j, column in enumerate(record.columns):
+        if column != updated_records[key][j]:
+            error = True
+    if error:
+        print('update error on', records[key], 'and', updated_columns, ':', record.columns, ', correct:', updated_records[key])
+    print("0 Done")
+
+'''
+keys = sorted(list(records.keys()))
+# aggregate on every column 
+for c in range(0, grades_table.num_columns):
+    for i in range(0, number_of_aggregates):
+        r = sorted(sample(range(0, len(keys)), 2))
+        # calculate the sum form test directory
+        # version -1 sum
+        column_sum = sum(map(lambda key: records[key][c], keys[r[0]: r[1] + 1]))
+        result = query.sum_version(keys[r[0]], keys[r[1]], c, -1)
+        if column_sum != result:
+            print('sum error on [', keys[r[0]], ',', keys[r[1]], ']: ', result, ', correct: ', column_sum)
+        else:
+            pass
+            # print('sum on [', keys[r[0]], ',', keys[r[1]], ']: ', column_sum)
+        # version -2 sum
+        column_sum = sum(map(lambda key: records[key][c], keys[r[0]: r[1] + 1]))
+        result = query.sum_version(keys[r[0]], keys[r[1]], c, -2)
+        if column_sum != result:
+            print('sum error on [', keys[r[0]], ',', keys[r[1]], ']: ', result, ', correct: ', column_sum)
+        else:
+            pass
+        # version 0 sum
+        updated_column_sum = sum(map(lambda key: updated_records[key][c], keys[r[0]: r[1] + 1]))
+        updated_result = query.sum_version(keys[r[0]], keys[r[1]], c, 0)
+        if updated_column_sum != updated_result:
+            print('sum error on [', keys[r[0]], ',', keys[r[1]], ']: ', updated_result, ', correct: ', updated_column_sum)
+        else:
+            pass
+
+'''
