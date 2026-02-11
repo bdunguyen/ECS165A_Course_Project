@@ -20,8 +20,12 @@ class Index:
     def key_index(self, record, key_col_no): 
         if self.indices[key_col_no] is None:
             self.indices[key_col_no] = {}
+
+        # print("primary key:", record.columns[key_col_no])
+        # print("record:", record)
         
         self.indices[key_col_no][record.columns[key_col_no]] = record
+        # print(self.indices[key_col_no])
 
 
     def locate(self, column: int, value:str) -> list[int]: # column integer
