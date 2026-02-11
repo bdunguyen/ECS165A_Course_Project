@@ -118,7 +118,7 @@ class Query:
             if search_key not in self.table.index.indices[search_key_index]:
                 raise Exception
             
-            base_record = self.table.index.indices[search_key_index][key] # this gives us the whole base record
+            base_record = self.table.index.indices[search_key_index][search_key] # this gives us the whole base record
 
             base_rid = base_record.rid
 
