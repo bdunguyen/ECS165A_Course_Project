@@ -72,7 +72,7 @@ class Query:
             RID = self.assignRID('b') # assign RID to the new entry
 
             for i in range(len(*columns)): # insertion process
-                self.table.b_pages_dir[i][RID[1]][RID[2]]
+                self.table.b_pages_dir[i][RID[1]][RID[2]] = columns[i]
             
             
             self.table.key_ind(Record(RID, None, 0 * self.table.num_records, *columns))
@@ -110,7 +110,7 @@ class Query:
 
                     for i in range(self.table.num_columns):
                         if projected_columns_index[i] == 1:
-                            projected.append(data[i])
+                            projected.append(data[i]) 
 
 
                 key = data[self.table.key]
