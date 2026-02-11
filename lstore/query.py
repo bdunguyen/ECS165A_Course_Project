@@ -248,6 +248,7 @@ class Query:
     # Returns False if no record exists in the given range
     """
     def sum_version(self, start_range, end_range, aggregate_column_index, relative_version):
+        #print("in sum verison ____")
 
         if relative_version > 0: return False
 
@@ -261,16 +262,23 @@ class Query:
             # a) we look for each key in our base page dir for the primary key col
             if key not in self.table.index.indices[self.table.key]:
                 continue
+
+            #print("key found:", key)
             
             base_record = self.table.index.indices[self.table.key][key] # this gives us the whole base record
+
+            #print("base rec:", base_record.columns)
 
             # b) find the RID of the base page
             base_rid = base_record.rid
 
             if base_record.indirection == None:
-                cur_record = base_record # we initialize a cur_record
+                # print("no other versions")
+                res += base_record.columns[aggregate_column_index]
+                continue
             else:
                 cur_record = base_record.indirection
+                # print("latest version:", cur_record.columns)
             
             relative_version_copy = relative_version
 
@@ -278,8 +286,8 @@ class Query:
                 # RID_COLUMN = 0
                 # INDIRECTION_COLUMN = 1
                 # we can store the base page RID and if we ever run into it again in the indirection col, we know that is that last version.
-            while relative_version_copy <= 0:
-                if cur_record.indirection == None or cur_record.rid == base_rid:
+            while relative_version_copy < 0:
+                if cur_record.rid == base_rid:
                     # this means this is the base record
                     # print("cur_record.columns[aggregate_column_index]:", cur_record.columns[aggregate_column_index])
                     res += cur_record.columns[aggregate_column_index]
@@ -294,6 +302,8 @@ class Query:
                 cur_record = cur_record.indirection
                 # update relative version
                 relative_version_copy += 1
+
+            res += cur_record.columns[aggregate_column_index]
             
         return res
 
