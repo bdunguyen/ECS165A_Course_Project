@@ -9,10 +9,11 @@ SCHEMA_ENCODING_COLUMN = 2
 
 class Record:
 
-    def __init__(self, rid, key, columns):
+    def __init__(self, rid, indirection, se,  columns):
         self.rid = rid # tuple of coordinates (col_no, page_no, index)
-        self.key = key # key column no.
-        self.columns = columns # number of columns
+        self.indirection = indirection 
+        self.se = se
+        self.columns = columns # column data 
 
 class Table:
 
@@ -23,7 +24,7 @@ class Table:
     """
     def __init__(self, name, num_columns, key):
         self.name = name
-        self.key = key
+        self.key = key 
         
         self.b_pages_dir = {i: [Page()] for i in range(num_columns + 4)} # base page directory
         self.t_pages_dir = {i: [] for i in range(num_columns + 4)} # tail page directory
