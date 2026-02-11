@@ -33,9 +33,3 @@ class Page:
             yield self.data[i: i+ self.length] # generates all the chunks
 
 
-
-
-### TEST    
-#t = Page()
-#t.write(9999999999 + 10000)
-#print(int.from_bytes(t.data[0:5], "big"))

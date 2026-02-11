@@ -5,8 +5,7 @@ from lstore.page import Page
 RID_COLUMN = 0
 INDIRECTION_COLUMN = 1
 SCHEMA_ENCODING_COLUMN = 2
-TIMESTAMP_COLUMN = 3
-USER_COLUMN_START = 4
+
 
 
 class Record:
