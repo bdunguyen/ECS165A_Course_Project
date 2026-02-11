@@ -2,6 +2,8 @@ from lstore.table import Table, Record
 from lstore.index import Index
 from lstore.page import Page
 from time import time
+from lstore.table import RID_COLUMN, INDIRECTION_COLUMN, SCHEMA_ENCODING_COLUMN
+
 
 
 class Query:
@@ -24,15 +26,46 @@ class Query:
     """
     def delete(self, primary_key):
         try:
-            RIDs= self.table.index.locate(self.table.key, primary_key)
-            if not RIDs:
+            if primary_key not in self.table.page_directory: # primary key needs to be in page directory
                 return False
-        
-            RID = RIDs[0]
-            return bool(self.table.delete_record(RID))
-    
-        except Exception:
+            
+            base_rid = self.table.page_directory[primary_key] # base rid is initialized as primary key in page directory
+
+            tail_rid = [] # store tail rids
+            for col in range(self.table.num_columns + 4):
+                if len(self.table.t_pages_dir[col]) == 0 or \
+                    self.table.t_pages_dir[col][-1].num_records >= 819:
+                    self.table.t_pages_dir[col].append(Page())
+
+                page = len(self.table.t_pages_dir[col]) - 1
+                index = self.table.t_pages_dir[col][page].num_records
+                tail_rid.append((col, page, index))
+
+            indirection_col, indirection_page, indirection_index = base_rid[INDIRECTION_COLUMN] # read indirection
+            prev_indirection = self.table.b_pages_dir[indirection_col][indirection_page].read(indirection_index)
+
+            if prev_indirection == 0:
+                prev_indirection = base_rid  # only first update points to base
+
+            for col in range(self.table.num_columns + 4): # write DELETE tail record
+                page = self.table.t_pages_dir[col][tail_rid[col][1]]
+
+                if col == INDIRECTION_COLUMN:
+                    page.write(prev_indirection)
+                elif col == SCHEMA_ENCODING_COLUMN:
+                    page.write((1 << self.table.num_columns) - 1) # delete
+                else:
+                    page.write(None)
+
+            self.table.b_pages_dir[indirection_col][indirection_page].overwrite( # update indirection to new tail rid
+                indirection_index, tail_rid
+            )
+
+            return True
+
+        except Exception as e:
             return False
+
     def getRID(self):
         RID = []
         for k,v in self.table.b_pages_dir.items():
@@ -168,19 +201,55 @@ class Query:
     """
     def update(self, primary_key, *columns):
         try:
-            # find base record
-            for RID, record in self.table.page_directory.items(): # go through page
-                if record["columns"][self.table.key] == primary_key: # if primary key match table key
-                    for i in range(self.table.num_columns): # go through column
-                        if columns[i] is not None: # if column not empty
-                            record["columns"][i] = columns[i] # update column
-                    return True
-            return False
+            if primary_key not in self.table.page_directory: # primary key needs to be in page directory
+                return False
             
-        except Exception: # if no record return false
+            base_rid = self.table.page_directory[primary_key] # base rid is initialized as primary key in page directory
+
+            tail_rid = [] # store tail rids
+            for col in range(self.table.num_columns + 4):
+                if len(self.table.t_pages_dir[col]) == 0 or \
+                    self.table.t_pages_dir[col][-1].num_records >= 819:
+                    self.table.t_pages_dir[col].append(Page())
+
+                page = len(self.table.t_pages_dir[col]) - 1
+                index = self.table.t_pages_dir[col][page].num_records
+                tail_rid.append((col, page, index))
+
+            indirection_col, indirection_page, indirection_index = base_rid[INDIRECTION_COLUMN] # read indirection
+            prev_indirection = self.table.b_pages_dir[indirection_col][indirection_page].read(indirection_index)
+
+            if prev_indirection == 0:
+                prev_indirection = base_rid  # only first update points to base
+
+            for col in range(self.table.num_columns + 4): # write tail record
+                page = self.table.t_pages_dir[col][tail_rid[col][1]]
+
+                if col == INDIRECTION_COLUMN:
+                    page.write(prev_indirection)
+                elif col == SCHEMA_ENCODING_COLUMN:
+                    schema = 0
+                    for i, v in enumerate(columns):
+                        if v is not None:
+                            schema |= (1 << i)
+                    page.write(schema)
+                else:
+                    user_col = col - 4
+                    if columns[user_col] is not None:
+                        page.write(columns[user_col])
+                    else:
+                        page.write(None)
+
+            self.table.b_pages_dir[indirection_col][indirection_page].overwrite( # update indirection to new tail rid
+                indirection_index, tail_rid
+            )
+
+            return True
+
+        except Exception:
             return False
         
-    
+        
     """
     :param start_range: int         # Start of the key range to aggregate 
     :param end_range: int           # End of the key range to aggregate 
