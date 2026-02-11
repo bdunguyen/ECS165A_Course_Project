@@ -95,32 +95,7 @@ class Query:
     # Assume that select will never be called on a key that doesn't exist
     """
     def select(self, search_key, search_key_index, projected_columns_index):
-        try:
-            RIDs = self.table.index.locate(search_key_index, search_key)
-
-            results = []
-
-            for RIDs, record in self.table.page_directory.items():
-                data = record["columns"]
-
-                if data[search_key_index] != search_key:
-                    continue
-
-                else: 
-                    projected = [] 
-
-                    for i in range(self.table.num_columns):
-                        if projected_columns_index[i] == 1:
-                            projected.append(data[i]) 
-
-
-                key = data[self.table.key]
-                results.append(Record(RIDs, key, projected))
-
-            return results
-        
-        except Exception:
-            return False
+        return self.select_version(search_key, search_key_index, projected_columns_index, 0)
 
 
     
@@ -135,7 +110,56 @@ class Query:
     # Assume that select will never be called on a key that doesn't exist
     """
     def select_version(self, search_key, search_key_index, projected_columns_index, relative_version):
-        pass
+        if relative_version > 0: return False
+
+        try:
+            res = [] # a list of Record objects upon success
+
+            if search_key not in self.table.index.indices[search_key_index]:
+                raise Exception
+            
+            base_record = self.table.index.indices[search_key_index][key] # this gives us the whole base record
+
+            base_rid = base_record.rid
+
+            cur_record = base_record # we initialize a cur_record
+            relative_version_copy = relative_version
+
+            while relative_version_copy <= 0:
+                if cur_record.indirection == None or cur_record.indirection.rid == base_rid:
+                    # we have reached the record we want
+                    break
+                # otherwise, we go to the location of the indirection rid
+                # we look at where our record is located
+                cur_record = cur_record.indirection
+                # update relative version
+                relative_version_copy += 1
+
+            # return_record_cols = [cur_record.columns[i] if projected_columns_index[i] == 1 else None for i in range(len(projected_columns_index))] 
+            # return_record = Record(cur_record.rid, cur_record.indirection, cur_record.se, return_record_cols)
+
+            res.append(cur_record)
+            
+            return res
+
+            # ----
+
+            rec = self.table.index.indices[search_key_index][search_key] # gives record
+
+            print(rec)
+            rec = rec.indirection # nav to latest tail
+
+            print(rec)
+
+            while relative_version < 0:
+                rec = rec.indirection
+                relative_version += 1
+
+                rec.columns = [rec.columns[i] if projected_columns_index[i] == 1 else None for i in range(len(projected_columns_index))] 
+            return [rec]
+        
+        except Exception:
+            return False
 
     
     """
@@ -245,4 +269,3 @@ class Query:
             u = self.update(key, *updated_columns)
             return u
         return False
-
