@@ -11,7 +11,7 @@ USER_COLUMN_START = 4
 
 class Record:
 
-    def __init__(self, rid, indirection, se,  columns):
+    def __init__(self, rid, indirection, se, *columns):
         self.rid = rid # tuple of coordinates (col_no, page_no, index)
         self.indirection = indirection 
         self.se = se
@@ -29,14 +29,18 @@ class Table:
         self.name = name
         self.key = key 
         
+<<<<<<< Updated upstream
         self.b_pages_dir = {i: [Page()] for i in range(num_columns + 4)} # base page directory
         self.t_pages_dir = {i: [] for i in range(num_columns + 4)} # tail page directory
 
         self.page_directory = {}  # maps primary_key -> list of (col_no, page_no, slot_no) for base record
+=======
+        self.b_pages_dir = {i: [Page()] for i in range(num_columns)} # base page directory
+        self.t_pages_dir = {i: [] for i in range(num_columns)} # tail page directory
+>>>>>>> Stashed changes
         
         self.num_columns = num_columns # this would be the number of pages
         self.index = Index(self)
-        self.key_ind = self.index.key_index(key)
         
         self.merge_threshold_pages = 50  # The threshold to trigger a merge
         
