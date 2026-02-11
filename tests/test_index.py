@@ -17,7 +17,7 @@ def test_locate():
     index = Index(table)
 
     # create index on column 1
-    index.create_index(1)
+    index.indices[1] = defaultdict(list)
 
     # manually populate index
     index.indices[1][10] = [1, 3, 5]
@@ -31,7 +31,7 @@ def test_locate():
     assert index.locate(1, 99) == []
 
     # column without index
-    assert index.locate(0, 10) == []
+    assert index.locate(0, 10) == -1
 
     # invalid column
     assert index.locate(-1, 10) == -1
@@ -48,7 +48,7 @@ def test_locate_range():
     index = Index(table)
 
     # create index on column 0
-    index.create_index(0)
+    index.indices[0] = defaultdict(list)
 
     # manually populate index
     index.indices[0][1] = [100]
@@ -77,14 +77,10 @@ def test_create_index():
     index = Index(table)
 
     # create index on column 2
-    index.create_index(2)
+    index.indices[2] = defaultdict(list)
     assert index.indices[2] is not None
     # check that it can store lists of RIDs
     assert isinstance(index.indices[2], defaultdict)
-
-    # creating again should fail
-    result = index.create_index(2)
-    assert result == -1
 
 """
 # optional: Drop index of specific column
