@@ -126,7 +126,10 @@ class Query:
             relative_version_copy = relative_version
 
             while relative_version_copy <= 0:
-                if cur_record.indirection == None or cur_record.indirection.rid == base_rid:
+                if cur_record.indirection == None:
+                    break
+                elif cur_record.indirection.rid == base_rid:
+                    cur_record = cur_record.indirection
                     # we have reached the record we want
                     break
                 # otherwise, we go to the location of the indirection rid
@@ -169,69 +172,55 @@ class Query:
     """
     def update(self, primary_key, *columns):
         try:
-            # base RID must exist in page directory
-            if primary_key not in self.index.indices[0]:    
+            if primary_key not in self.table.index.indices[self.table.key]:
                 return False
-
-            base_rec = self.index.indices[primary_key]
-
-            # find which index of cols that will be updated
-
-            # some writing function (first time update -> two tail records)
-            # 
-            # take the previous tail record (if there is one), copy its column data, and write to the column data with a new updated value.
-            # for each update, update the index    
-            base_rec
             
+            base_record = self.table.index.indices[self.table.key][primary_key] # this gives us the whole base record
 
-            # allocate tail slots
-            tail_rid = {}
-            for col in range(self.table.num_columns + 4):
-                if (
-                    len(self.table.t_pages_dir[col]) == 0
-                    or self.table.t_pages_dir[col][-1].num_records >= 819
-                ):
-                    self.table.t_pages_dir[col].append(Page())
 
-                page_no = len(self.table.t_pages_dir[col]) - 1
-                slot_no = self.table.t_pages_dir[col][page_no].num_records
-                tail_rid[col] = (page_no, slot_no)
+            # we need the latest record
+            if base_record.indirection:
+                latest_record = base_record.indirection
+            else:
+                latest_record = base_record
+            
+            # build the latest tail record
+            se = []
+            new_columns = []
 
-            # write tail record
-            schema = 0
-
-            for col in range(self.table.num_columns + 4):
-                page_no, slot_no = tail_rid[col]
-                page = self.table.t_pages_dir[col][page_no]
-
-                if col == INDIRECTION_COLUMN:
-                    page.write(prev_tail if prev_tail != 0 else primary_key)
-
-                elif col == SCHEMA_ENCODING_COLUMN:
-                    for i, v in enumerate(columns):
-                        if v is not None:
-                            schema |= (1 << i)
-                    page.write(schema)
-
-                elif col < 4:
-                    page.write(0)
-
+            for i, prev_col in enumerate(latest_record.columns):
+                # print("i:", i)
+                # print("latest_record.columns:", latest_record.columns)
+                if columns[i] == None:
+                    se.append(0)
+                    new_columns.append(prev_col)
                 else:
-                    user_col = col - 4
-                    if columns[user_col] is not None:
-                        page.write(columns[user_col])
-                    else:
-                        # copy base value
-                        base_page, base_slot = base_rid[col]
-                        base_page_obj = self.table.b_pages_dir[col][base_page]
-                        old_val = int.from_bytes(
-                            base_page_obj.data[base_slot*5:(base_slot+1)*5], "big"
-                        )
-                        page.write(old_val)
+                    se.append(1)
+                    new_columns.append(columns[i])
 
-            # update base indirection to newest tail
-            base_ind_page.data[ind_slot*5:(ind_slot+1)*5] = \
-                primary_key.to_bytes(5, "big")
+            # print("SE:", se)
+            # print("New Cols:", new_columns)
+
+            RID = self.assignRID('t')
+
+            latest_tail_record = Record(RID, latest_record, se, *new_columns)
+
+            base_record.indirection = latest_tail_record
+
+            # print(base_record.indirection.columns)
+
+            # now we need to take care of the data stored in the page directories
+            # for each column, there is a key in tail page directory
+            for col_num, pages in self.table.t_pages_dir.items:
+                # we want to look at the last page
+                # see if there is space on that page
+                value = columns[col_num]
+                if pages[-1].has_capacity(value):
+                    pages[-1].write(value)
+                else:
+                    new_page = Page()
+                    new_page.write(value)
+                    self.table.t_pages_dir[col_num].append(new_page)
 
             return True
 
@@ -261,11 +250,8 @@ class Query:
     # Returns False if no record exists in the given range
     """
     def sum_version(self, start_range, end_range, aggregate_column_index, relative_version):
-        # NOTE: indirection of base page points to the most recent tail page of that record
 
         if relative_version > 0: return False
-
-        # print(self.table.index.indices)
 
         # variable to store the total sum
         res = 0
@@ -283,7 +269,11 @@ class Query:
             # b) find the RID of the base page
             base_rid = base_record.rid
 
-            cur_record = base_record # we initialize a cur_record
+            if base_record.indirection == None:
+                cur_record = base_record # we initialize a cur_record
+            else:
+                cur_record = base_record.indirection
+            
             relative_version_copy = relative_version
 
             # c) while relative version <= 0: check there is a version to go back to, go to indirection, go to that rid (keep track of where this is), increase relative version by 1
@@ -291,16 +281,16 @@ class Query:
                 # INDIRECTION_COLUMN = 1
                 # we can store the base page RID and if we ever run into it again in the indirection col, we know that is that last version.
             while relative_version_copy <= 0:
-                if cur_record.indirection == None or cur_record.indirection.rid == base_rid:
-                    # this is the record that we want
-                    # add the value of the record in the specified column
+                if cur_record.indirection == None or cur_record.rid == base_rid:
+                    # this means this is the base record
+                    # print("cur_record.columns[aggregate_column_index]:", cur_record.columns[aggregate_column_index])
+                    res += cur_record.columns[aggregate_column_index]
                     # print("cur res:", res)
                     # print("value to add:", cur_record.columns[aggregate_column_index])
-        
-                    res += cur_record.columns[aggregate_column_index]
                     # exit the loop
                     break
-        
+
+                print("cur_record.columns[aggregate_column_index]:", cur_record.columns[aggregate_column_index])
                 # otherwise, we go to the location of the indirection rid
                 # we look at where our record is located
                 cur_record = cur_record.indirection
@@ -326,3 +316,4 @@ class Query:
             u = self.update(key, *updated_columns)
             return u
         return False
+    

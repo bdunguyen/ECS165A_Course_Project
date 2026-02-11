@@ -12,7 +12,7 @@ class Record:
 
     def __init__(self, rid, indirection, se, *columns):
         self.rid = rid # tuple of coordinates (col_no, page_no, index)
-        self.indirection = indirection 
+        self.indirection = None 
         self.se = se
         self.columns = columns # column data 
         
@@ -29,7 +29,7 @@ class Table:
         self.key = key 
         
         self.b_pages_dir = {i: [Page()] for i in range(num_columns)} # base page directory
-        self.t_pages_dir = {i: [] for i in range(num_columns)} # tail page directory
+        self.t_pages_dir = {i: [Page()] for i in range(num_columns)} # tail page directory
         
         self.num_columns = num_columns # this would be the number of pages
         self.index = Index(self)
