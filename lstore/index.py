@@ -34,7 +34,7 @@ class Index:
         if self.indices[column] == None:
             return -1 # return empty list because we don't have any rids
         
-        return self.indices[column][value] # returns RID tuple
+        return self.indices[column][value].rid # returns RID tuple
 
     """
     # Returns the RIDs of all records with values in column "column" between "begin" and "end"

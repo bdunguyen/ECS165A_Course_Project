@@ -34,21 +34,33 @@ class Query:
         except Exception:
             return False
         
-    def getRID(self):
+    def assignRID(self, type): # find the next available space to add data for a whole record
         RID = []
-        for k,v in self.table.b_pages_dir.items():
-            pg_no = len(v) -1
-            pg_rec_no = v[pg_no].num_records
-            if pg_rec_no < 819:
-                RID.append((k,pg_no,pg_rec_no))
-            else:
-                self.table.b_pages_dir[k].append(Page())
+        if type == 'b':
+            for k,v in self.table.b_pages_dir.items():
                 pg_no = len(v) -1
                 pg_rec_no = v[pg_no].num_records
-                RID.append((k,pg_no,pg_rec_no))
+                if pg_rec_no < 819:
+                    RID.append((k,pg_no,pg_rec_no))
+                else:
+                    self.table.b_pages_dir[k].append(Page())
+                    pg_no = len(v) -1
+                    pg_rec_no = v[pg_no].num_records
+                    RID.append((k,pg_no,pg_rec_no))
+        elif type == 't':
+            for k,v in self.table.t_pages_dir.items():
+                pg_no = len(v) -1
+                pg_rec_no = v[pg_no].num_records
+                if pg_rec_no < 819:
+                    RID.append((k,pg_no,pg_rec_no))
+                else:
+                    self.table.t_pages_dir[k].append(Page())
+                    pg_no = len(v) -1
+                    pg_rec_no = v[pg_no].num_records
+                    RID.append((k,pg_no,pg_rec_no))            
                 
         
-        return RID
+        return RID # return the full RID
 
     """
     # Insert a record with specified columns
@@ -56,35 +68,20 @@ class Query:
     # Returns False if insert fails for whatever reason
     """
     def insert(self, *columns):
-        
-        try:
-            #col count
-            if len(columns) != self.table.num_columns:
-                return False
+        try: 
+            RID = self.assignRID('b') # assign RID to the new entry
+
+            for i in range(len(*columns)): # insertion process
+                self.table.b_pages_dir[i][RID[1]][RID[2]]
             
-
-            schema_encoding = '0' * self.table.num_columns
-
-
-            #create rid (very loose logic)
-            RID = len(self.table.page_directory) + 1
-
-            self.table.page_directory[RID] = {
-                "columns": list(columns),
-                "schema": schema_encoding
-            }
             
-            # define key
-            key = columns[self.table.key]
+            self.table.key_ind(Record(RID, None, 0 * self.table.num_records, *columns))
 
-            if self.table.key in self.table.index.indices:
-                self.table.index.indices[self.table.key].insert(key, RID)
-
-            return True
-        
-
-        except Exception:
+            return True 
+        except:
             return False
+
+
 
     
     """
