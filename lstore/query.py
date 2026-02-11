@@ -119,20 +119,20 @@ class Query:
 
             if search_key not in self.table.index.indices[search_key_index]:
                 raise Exception
-            
+
             base_record = self.table.index.indices[search_key_index][search_key] # this gives us the whole base record
 
             base_rid = base_record.rid
 
-            cur_record = base_record # we initialize a cur_record
+            if base_record.indirection == None:
+                cur_record = base_record # we initialize a cur_record
+            else:
+                cur_record = base_record.indirection
+            
             relative_version_copy = relative_version
 
             while relative_version_copy <= 0:
-                if cur_record.indirection == None:
-                    break
-                elif cur_record.indirection.rid == base_rid:
-                    cur_record = cur_record.indirection
-                    # we have reached the record we want
+                if cur_record.indirection == None or cur_record.rid == base_rid:
                     break
                 # otherwise, we go to the location of the indirection rid
                 # we look at where our record is located
@@ -146,22 +146,6 @@ class Query:
             res.append(cur_record)
             
             return res
-
-            # ----
-
-            rec = self.table.index.indices[search_key_index][search_key] # gives record
-
-            print(rec)
-            rec = rec.indirection # nav to latest tail
-
-            print(rec)
-
-            while relative_version < 0:
-                rec = rec.indirection
-                relative_version += 1
-
-                rec.columns = [rec.columns[i] if projected_columns_index[i] == 1 else None for i in range(len(projected_columns_index))] 
-            return [rec]
         
         except Exception:
             return False
@@ -209,7 +193,7 @@ class Query:
 
             base_record.indirection = latest_tail_record
 
-            # print(base_record.indirection.columns)
+            # print(latest_tail_record.columns)
 
             # now we need to take care of the data stored in the page directories
             # for each column, there is a key in tail page directory
@@ -318,4 +302,3 @@ class Query:
             u = self.update(key, *updated_columns)
             return u
         return False
-    
