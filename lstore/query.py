@@ -31,8 +31,6 @@ class Query:
                 page = self.table.t_pages_dir[i][rid[i][1]]
                 page.write(0) # for null
             return True
-            
-            
     
 
     def assignRID(self, type): # find the next available space to add data for a whole record
@@ -70,10 +68,9 @@ class Query:
     """
     def insert(self, *columns):
         try: 
-            RID = self.assignRID('b') # assign RID to the new entry
-            # print(RID)
+            RID = self.assignRID('b')
 
-            for i in range(len(columns)): # insertion process
+            for i in range(len(columns)):
                 page = self.table.b_pages_dir[i][RID[i][1]]
 
                 value = columns[i]
@@ -113,21 +110,14 @@ class Query:
     """
     def select_version(self, search_key, search_key_index, projected_columns_index, relative_version):
         if relative_version > 0: return False
-        res = [] # a list of Record objects upon success
+
+        res = []
 
         if search_key not in self.table.index.indices[search_key_index]:
             return False
-        
-        # print("search_key_index:", search_key_index)
-        # print("search_key:", search_key)
-
-        # print("self.table.index.indices[search_key_index]:", self.table.index.indices[search_key_index][search_key])
 
 
         base_record = self.table.index.indices[search_key_index][search_key] # this gives us the whole base record
-
-
-        #print("base:", base_record.columns)
 
         if base_record.indirection == None:
             print(base_record.columns)
@@ -141,16 +131,14 @@ class Query:
         while relative_version_copy < 0:
             if cur_record.indirection == None or cur_record == base_record:
                 break
-            # otherwise, we go to the location of the indirection rid
-            # we look at where our record is located
+
             cur_record = cur_record.indirection
-            # update relative version
+
             relative_version_copy += 1
 
+        # TODO: Handle projected_columns_index
         # return_record_cols = [cur_record.columns[i] if projected_columns_index[i] == 1 else None for i in range(len(projected_columns_index))] 
         # return_record = Record(cur_record.rid, cur_record.indirection, cur_record.se, return_record_cols)
-
-        #print("cur:", cur_record.columns)
 
         res.append(cur_record)
         
@@ -169,7 +157,6 @@ class Query:
             
             base_record = self.table.index.indices[self.table.key][primary_key] # this gives us the whole base record
 
-
             # we need the latest record
             if base_record.indirection:
                 latest_record = base_record.indirection
@@ -181,8 +168,6 @@ class Query:
             new_columns = []
 
             for i, prev_col in enumerate(latest_record.columns):
-                # print("i:", i)
-                # print("latest_record.columns:", latest_record.columns)
                 if columns[i] == None:
                     se.append(0)
                     new_columns.append(prev_col)
@@ -190,21 +175,12 @@ class Query:
                     se.append(1)
                     new_columns.append(columns[i])
 
-            # print("SE:", se)
-            # print("New Cols:", new_columns)
-
             RID = self.assignRID('t')
-
-            # print('lastest_record:', latest_record.columns)
 
             latest_tail_record = Record(RID, None, se, *new_columns)
             latest_tail_record.indirection = latest_record
 
-            # print("lasest tail rec indirection:", latest_tail_record.indirection.columns)
-
             base_record.indirection = latest_tail_record
-
-            # print(latest_tail_record.columns)
 
             # now we need to take care of the data stored in the page directories
             # for each column, there is a key in tail page directory
@@ -247,8 +223,6 @@ class Query:
     # Returns False if no record exists in the given range
     """
     def sum_version(self, start_range, end_range, aggregate_column_index, relative_version):
-        #print("in sum verison ____")
-        #print("rel vers:", relative_version)
 
         if relative_version > 0: return False
 
@@ -262,23 +236,18 @@ class Query:
             # a) we look for each key in our base page dir for the primary key col
             if key not in self.table.index.indices[self.table.key]:
                 continue
-
-            #print("key found:", key)
             
             base_record = self.table.index.indices[self.table.key][key] # this gives us the whole base record
-
-            #print("base rec:", base_record.columns)
 
             # b) find the RID of the base page
             base_rid = base_record.rid
 
             if base_record.indirection == None:
-                #print("no other versions")
+
                 res += base_record.columns[aggregate_column_index]
                 continue
             else:
                 cur_record = base_record.indirection
-                #print("latest version:", cur_record.columns)
             
             relative_version_copy = relative_version
 
@@ -286,26 +255,17 @@ class Query:
                 # RID_COLUMN = 0
                 # INDIRECTION_COLUMN = 1
                 # we can store the base page RID and if we ever run into it again in the indirection col, we know that is that last version.
-            #print("rel vers:", relative_version_copy)
+
             while relative_version_copy < 0:
                 if cur_record == base_record:
-                    #print("reached base:", cur_record, "=", base_record)
                     # this means this is the base record
-                    # print("cur_record.columns[aggregate_column_index]:", cur_record.columns[aggregate_column_index])
-                    # print("cur res:", res)
-                    # print("value to add:", cur_record.columns[aggregate_column_index])
                     # exit the loop
                     break
 
-                #print("cur_record.columns[aggregate_column_index]:", cur_record.columns[aggregate_column_index])
-                # otherwise, we go to the location of the indirection rid
-                # we look at where our record is located
                 cur_record = cur_record.indirection
                 # update relative version
                 relative_version_copy += 1
-                #print("rel vers:", relative_version_copy)
-            
-            #print("latest version:", cur_record.columns)
+
             res += cur_record.columns[aggregate_column_index]
             
         return res
