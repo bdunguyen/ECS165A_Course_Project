@@ -1,5 +1,4 @@
-from lstore.table import Table, Record
-from lstore.index import Index
+from lstore.table import Record
 from lstore.page import Page
 from time import time
 from lstore.table import INDIRECTION_COLUMN, SCHEMA_ENCODING_COLUMN
@@ -77,20 +76,27 @@ class Query:
     def insert(self, *columns):
         try: 
             RID = self.assignRID('b') # assign RID to the new entry
+            # print(RID)
 
+<<<<<<< Updated upstream
             for i in range(len(*columns)): # insertion process
                 self.table.b_pages_dir[i][RID[1]][RID[2]]
+=======
+            for i in range(len(columns)): # insertion process
+                page = self.table.b_pages_dir[i][RID[i][1]]
+
+                value = columns[i]
+
+                page.write(value)
+>>>>>>> Stashed changes
             
-            
-            self.table.key_ind(Record(RID, None, 0 * self.table.num_records, *columns))
+            self.table.index.key_index(Record(RID, None, [0] * self.table.num_columns, *columns), self.table.key)
 
             self.table.page_directory[columns[self.table.key]] = RID # add RID to page_directory so update() and delete() can access
 
             return True 
         except:
             return False
-
-
 
     
     """
@@ -238,6 +244,8 @@ class Query:
 
         if relative_version > 0: return False
 
+        # print(self.table.index.indices)
+
         # create a key for the rids..
         self.table.index.key_index(0) # this will make the rids hashable
 
@@ -247,7 +255,14 @@ class Query:
         # 1. we must find each record in the base pages. 
         for key in range(start_range, end_range + 1):
             # a) we look for each key in our base page dir for the primary key col
+<<<<<<< Updated upstream
             key_col_num, page_index, record_index = self.table.index.indices[self.table.key][key] # gives us a tuple (key_col_num, page, index on page)
+=======
+            if key not in self.table.index.indices[self.table.key]:
+                continue
+            
+            base_record = self.table.index.indices[self.table.key][key] # this gives us the whole base record
+>>>>>>> Stashed changes
 
             # b) find the RID of the base page
             base_rid = int.from_bytes(self.table.b_pages_dir[1][page_index].data[(record_index * 5) : (record_index * 5) + 5])
@@ -259,13 +274,24 @@ class Query:
                 # INDIRECTION_COLUMN = 1
                 # we can store the base page RID and if we ever run into it again in the indirection col, we know that is that last version.
             while relative_version_copy <= 0:
+<<<<<<< Updated upstream
                 indirection_rid = int.from_bytes(self.table.t_pages_dir[1][page_index].data[(record_index * 5) : (record_index * 5) + 5])
                 if indirection_rid == None or indirection_rid == base_rid:
                     # this is the record that we want
                     # add the value of the record in the specified column
                     res += int.from_bytes(self.table.t_pages_dir[aggregate_column_index][page_index].data[(record_index * 5) : (record_index * 5) + 5])
+=======
+                if cur_record.indirection == None or cur_record.indirection.rid == base_rid:
+                    # this is the record that we want
+                    # add the value of the record in the specified column
+                    # print("cur res:", res)
+                    # print("value to add:", cur_record.columns[aggregate_column_index])
+        
+                    res += cur_record.columns[aggregate_column_index]
+>>>>>>> Stashed changes
                     # exit the loop
                     break
+        
                 # otherwise, we go to the location of the indirection rid
                 # we look at where our record is located
                 key_col_num, page_index, record_index = self.table.index.indices[0][indirection_rid]
