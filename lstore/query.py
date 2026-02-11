@@ -187,19 +187,22 @@ class Query:
         if relative_version > 0: return False
 
         # create a key for the rids..
-        self.table.index.key_index(0) # this will make the rids hashable
+        # self.table.index.key_index(0) # this will make the rids hashable
 
         # variable to store the total sum
         res = 0
 
-        # 1. we must find each record in the base pages. 
+        # 1. we must find each record in the base pages.
+            # - start range: primary key is equal to start_range
+            # - end range: primary key is equal to end_range
         for key in range(start_range, end_range + 1):
             # a) we look for each key in our base page dir for the primary key col
-            key_col_num, page_index, record_index = self.table.index.indices[self.table.key][key] # gives us a tuple (key_col_num, page, index on page)
+            base_record = self.table.index.indices[self.table.key][start_range] # this gives us the whole base record
 
             # b) find the RID of the base page
-            base_rid = int.from_bytes(self.table.b_pages_dir[1][page_index].data[(record_index * 5) : (record_index * 5) + 5])
+            base_rid = base_record.rid
 
+            cur_record = base_record # we initialize a cur_record
             relative_version_copy = relative_version
 
             # c) while relative version <= 0: check there is a version to go back to, go to indirection, go to that rid (keep track of where this is), increase relative version by 1
@@ -207,16 +210,16 @@ class Query:
                 # INDIRECTION_COLUMN = 1
                 # we can store the base page RID and if we ever run into it again in the indirection col, we know that is that last version.
             while relative_version_copy <= 0:
-                indirection_rid = int.from_bytes(self.table.t_pages_dir[1][page_index].data[(record_index * 5) : (record_index * 5) + 5])
+                indirection_rid = cur_record.indirection.rid
                 if indirection_rid == None or indirection_rid == base_rid:
                     # this is the record that we want
                     # add the value of the record in the specified column
-                    res += int.from_bytes(self.table.t_pages_dir[aggregate_column_index][page_index].data[(record_index * 5) : (record_index * 5) + 5])
+                    res += cur_record.columns[aggregate_column_index]
                     # exit the loop
                     break
                 # otherwise, we go to the location of the indirection rid
                 # we look at where our record is located
-                key_col_num, page_index, record_index = self.table.index.indices[0][indirection_rid]
+                cur_record = cur_record.indirection
                 # update relative version
                 relative_version_copy += 1
             
