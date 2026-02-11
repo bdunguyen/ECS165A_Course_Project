@@ -139,7 +139,6 @@ class Query:
         relative_version_copy = relative_version
 
         while relative_version_copy < 0:
-            print("hi")
             if cur_record.indirection == None or cur_record == base_record:
                 break
             # otherwise, we go to the location of the indirection rid
@@ -249,6 +248,7 @@ class Query:
     """
     def sum_version(self, start_range, end_range, aggregate_column_index, relative_version):
         #print("in sum verison ____")
+        #print("rel vers:", relative_version)
 
         if relative_version > 0: return False
 
@@ -273,12 +273,12 @@ class Query:
             base_rid = base_record.rid
 
             if base_record.indirection == None:
-                # print("no other versions")
+                #print("no other versions")
                 res += base_record.columns[aggregate_column_index]
                 continue
             else:
                 cur_record = base_record.indirection
-                # print("latest version:", cur_record.columns)
+                #print("latest version:", cur_record.columns)
             
             relative_version_copy = relative_version
 
@@ -286,11 +286,12 @@ class Query:
                 # RID_COLUMN = 0
                 # INDIRECTION_COLUMN = 1
                 # we can store the base page RID and if we ever run into it again in the indirection col, we know that is that last version.
+            #print("rel vers:", relative_version_copy)
             while relative_version_copy < 0:
-                if cur_record.rid == base_rid:
+                if cur_record == base_record:
+                    #print("reached base:", cur_record, "=", base_record)
                     # this means this is the base record
                     # print("cur_record.columns[aggregate_column_index]:", cur_record.columns[aggregate_column_index])
-                    res += cur_record.columns[aggregate_column_index]
                     # print("cur res:", res)
                     # print("value to add:", cur_record.columns[aggregate_column_index])
                     # exit the loop
@@ -302,7 +303,9 @@ class Query:
                 cur_record = cur_record.indirection
                 # update relative version
                 relative_version_copy += 1
-
+                #print("rel vers:", relative_version_copy)
+            
+            #print("latest version:", cur_record.columns)
             res += cur_record.columns[aggregate_column_index]
             
         return res
