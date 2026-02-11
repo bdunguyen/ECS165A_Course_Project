@@ -29,15 +29,8 @@ class Table:
         self.name = name
         self.key = key 
         
-<<<<<<< Updated upstream
-        self.b_pages_dir = {i: [Page()] for i in range(num_columns + 4)} # base page directory
-        self.t_pages_dir = {i: [] for i in range(num_columns + 4)} # tail page directory
-
-        self.page_directory = {}  # maps primary_key -> list of (col_no, page_no, slot_no) for base record
-=======
         self.b_pages_dir = {i: [Page()] for i in range(num_columns)} # base page directory
         self.t_pages_dir = {i: [] for i in range(num_columns)} # tail page directory
->>>>>>> Stashed changes
         
         self.num_columns = num_columns # this would be the number of pages
         self.index = Index(self)
