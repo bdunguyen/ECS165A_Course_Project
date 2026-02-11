@@ -21,18 +21,20 @@ class Query:
     # Return False if record doesn't exist or is locked due to 2PL
     """
     def delete(self, primary_key):
-        try:
-
-            RIDs= self.table.index.locate(self.table.key, primary_key)
-            if not RIDs:
+            base_rec = self.table.index.locate(self.table.key, primary_key)
+            if not base_rec:
                 return False
-        
-            RID = RIDs[0]
-            return bool(self.table.delete_record(RID))
+
+            rid = self.assignRID('t')
+
+            for i in range(self.table.num_columns):
+                page = self.table.t_pages_dir[i][rid[i][1]]
+                page.write(0) # for null
+            return True
+            
+            
     
-        except Exception:
-            return False
-        
+
     def assignRID(self, type): # find the next available space to add data for a whole record
         RID = []
         if type == 'b':
