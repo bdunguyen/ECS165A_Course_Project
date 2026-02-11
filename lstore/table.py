@@ -43,7 +43,9 @@ class Table:
         print("merge is happening")
         pass
 
-
+'''
 t = Table('test', 5, 0)
 print(t.index.indices)
+'''
+
 
